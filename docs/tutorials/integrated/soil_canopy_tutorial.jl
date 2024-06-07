@@ -68,12 +68,8 @@ f_root_to_shoot = FT(3.5)
 SAI = FT(0.00242)
 maxLAI = FT(4.2)
 plant_ν = FT(2.46e-4)
-n_stem = Int64(1)
-n_leaf = Int64(1)
 h_stem = FT(9)
 h_leaf = FT(9.5)
-compartment_midpoints = [h_stem / 2, h_stem + h_leaf / 2]
-compartment_surfaces = [zmax, h_stem, h_stem + h_leaf]
 land_domain = Column(; zlim = (zmin, zmax), nelements = nelements);
 
 # - We will be using prescribed atmospheric and radiative drivers from the
@@ -215,7 +211,7 @@ canopy_component_types = (;
     radiative_transfer = Canopy.TwoStreamModel{FT},
     photosynthesis = Canopy.FarquharModel{FT},
     conductance = Canopy.MedlynConductanceModel{FT},
-    hydraulics = Canopy.PlantHydraulicsModel{FT},
+    hydraulics = Canopy.BigLeafHydraulicsModel{FT},
 );
 
 # Then provide arguments to the canopy radiative transfer, stomatal conductance,
@@ -270,13 +266,8 @@ plant_hydraulics_ps = PlantHydraulics.PlantHydraulicsParameters(;
     retention_model = retention_model,
 )
 
-plant_hydraulics_args = (
-    parameters = plant_hydraulics_ps,
-    n_stem = n_stem,
-    n_leaf = n_leaf,
-    compartment_midpoints = compartment_midpoints,
-    compartment_surfaces = compartment_surfaces,
-);
+plant_hydraulics_args =
+    (parameters = plant_hydraulics_ps, h_stem = h_stem, h_leaf = h_leaf);
 
 # We may now collect all of the canopy component argument tuples into one
 # arguments tuple for the canopy component models.

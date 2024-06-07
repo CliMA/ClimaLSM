@@ -16,7 +16,7 @@ model.
 See Cowan 1968; Brutsaert 1982, pp. 113–116; Campbell and Norman 1998, p. 71; Shuttleworth 2012, p. 343; Monteith and Unsworth 2013, p. 304.
 """
 function ClimaLand.displacement_height(model::CanopyModel{FT}, Y, p) where {FT}
-    return FT(0.67) * model.hydraulics.compartment_surfaces[end]
+    return FT(0.67) * (model.hydraulics.h_stem + model.hydraulics.h_leaf)
 end
 
 """
@@ -68,8 +68,8 @@ end
 A helper function which returns the surface height for the canopy
 model, which is stored in the parameter struct.
 """
-function ClimaLand.surface_height(model::CanopyModel, _...)
-    return model.hydraulics.compartment_surfaces[1]
+function ClimaLand.surface_height(model::CanopyModel{FT}, _...) where {FT}
+    return FT(0.0)
 end
 
 """
@@ -110,7 +110,7 @@ end
                                 <:Union{BeerLambertModel, TwoStreamModel},
                                 <:Union{FarquharModel,OptimalityFarquharModel},
                                 <:MedlynConductanceModel,
-                                <:PlantHydraulicsModel,
+                                <:BigLeafHydraulicsModel,
                                 <:Union{PrescribedCanopyTempModel,BigLeafEnergyModel}
                             },
                             radiation::PrescribedRadiativeFluxes,
@@ -141,7 +141,7 @@ function canopy_boundary_fluxes!(
         <:Union{BeerLambertModel, TwoStreamModel},
         <:Union{FarquharModel, OptimalityFarquharModel},
         <:MedlynConductanceModel,
-        <:PlantHydraulicsModel,
+        <:BigLeafHydraulicsModel,
         <:Union{PrescribedCanopyTempModel, BigLeafEnergyModel},
     },
     radiation::PrescribedRadiativeFluxes,
@@ -157,7 +157,7 @@ function canopy_boundary_fluxes!(
     shf = p.canopy.energy.shf
     lhf = p.canopy.energy.lhf
     r_ae = p.canopy.energy.r_ae
-    i_end = canopy.hydraulics.n_stem + canopy.hydraulics.n_leaf
+    i_end = (canopy.hydraulics.h_stem > 0 ? 1 : 0) + 1
 
     # Compute transpiration, SHF, LHF
     canopy_turbulent_fluxes = turbulent_fluxes(atmos, canopy, Y, p, t)

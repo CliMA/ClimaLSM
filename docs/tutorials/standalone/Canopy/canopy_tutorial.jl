@@ -84,12 +84,8 @@ f_root_to_shoot = FT(3.5)
 SAI = FT(0.00242)
 maxLAI = FT(4.2)
 plant_ν = FT(2.46e-4) # kg/m^2
-n_stem = Int64(1)
-n_leaf = Int64(1)
 h_stem = FT(9)
 h_leaf = FT(9.5)
-compartment_midpoints = [h_stem / 2, h_stem + h_leaf / 2]
-compartment_surfaces = [zmax, h_stem, h_stem + h_leaf]
 land_domain = Point(; z_sfc = FT(0.0))
 
 # - We will be using prescribed atmospheric and radiative drivers from the
@@ -233,12 +229,10 @@ plant_hydraulics_ps = PlantHydraulics.PlantHydraulicsParameters(;
 
 # Define the remaining variables required for the plant hydraulics model.
 
-plant_hydraulics = PlantHydraulics.PlantHydraulicsModel{FT}(;
+plant_hydraulics = PlantHydraulics.BigLeafHydraulicsModel{FT}(;
     parameters = plant_hydraulics_ps,
-    n_stem = n_stem,
-    n_leaf = n_leaf,
-    compartment_surfaces = compartment_surfaces,
-    compartment_midpoints = compartment_midpoints,
+    h_stem = h_stem,
+    h_leaf = h_leaf,
 );
 
 # Now, instantiate the canopy model, using the atmospheric and radiative

@@ -87,7 +87,7 @@ running the canopy model in standalone mode), or prognostic (of type
 PrognosticSoil, for running integrated soil+canopy models)
 
 Note that the canopy height is specified as part of the
-PlantHydraulicsModel, along with the area indices of the leaves, roots, and
+BigLeafHydraulicsModel, along with the area indices of the leaves, roots, and
 stems. Eventually, when plant biomass becomes a prognostic variable (by
 integrating with a carbon model), some parameters specified here will be
 treated differently.
@@ -143,7 +143,7 @@ end
 An outer constructor for the `CanopyModel`. The primary
 constraints this applies are (1) ensuring that the domain is 1d or 2d
 (a ``surface" domain of a column, box, or sphere) and (2) ensuring
-consistency between the PlantHydraulics model and the general canopy model,
+consistency between the BigLeafHydraulics model and the general canopy model,
 since these are built separately.
 """
 function CanopyModel{FT}(;
@@ -362,13 +362,13 @@ end
                                                   <:Union{BeerLambertModel, TwoStreamModel},
                                                   <:FarquharModel,
                                                   <:MedlynConductanceModel,
-                                                  <:PlantHydraulicsModel,},
+                                                  <:BigLeafHydraulicsModel,},
                               ) where {FT}
 
 Creates the `update_aux!` function for the `CanopyModel`; a specific
 method for `update_aux!` for the case where the canopy model components
 are of the type in the parametric type signature: `AutotrophicRespirationModel`, `AbstractRadiationModel`,
-`FarquharModel`, `MedlynConductanceModel`, and `PlantHydraulicsModel`.
+`FarquharModel`, `MedlynConductanceModel`, and `BigLeafHydraulicsModel`.
 
 Please note that the plant hydraulics model has auxiliary variables
 that are updated in its prognostic `compute_exp_tendency!` function.
@@ -386,7 +386,7 @@ function ClimaLand.make_update_aux(
         <:Union{BeerLambertModel, TwoStreamModel},
         <:Union{FarquharModel, OptimalityFarquharModel},
         <:MedlynConductanceModel,
-        <:PlantHydraulicsModel,
+        <:BigLeafHydraulicsModel,
         <:AbstractCanopyEnergyModel,
     },
 ) where {FT}
@@ -488,9 +488,7 @@ function ClimaLand.make_update_aux(
 
         # update plant hydraulics aux
         hydraulics = canopy.hydraulics
-        n_stem = hydraulics.n_stem
-        n_leaf = hydraulics.n_leaf
-        PlantHydraulics.lai_consistency_check.(n_stem, n_leaf, area_index)
+        PlantHydraulics.lai_consistency_check.(hydraulics, area_index)
         (; retention_model, conductivity_model, S_s, ν) = hydraulics.parameters
         # We can index into a field of Tuple{FT} to extract a field of FT
         # using the following notation: field.:index
@@ -506,8 +504,10 @@ function ClimaLand.make_update_aux(
         # for broadcasted expressions using the macro @.
         # field.:($index) .= value # works
         # @ field.:($$index) = value # works
-        @inbounds for i in 1:(n_stem + n_leaf - 1)
-            ip1 = i + 1
+        labels = hydraulics.h_stem > 0 ? [:stem, :leaf] : [:leaf]
+        if hydraulics.h_stem > 0
+            i = 1
+            ip1 = 2
             @. ψ.:($$ip1) = PlantHydraulics.water_retention_curve(
                 retention_model,
                 PlantHydraulics.effective_saturation(ν, ϑ_l.:($$ip1)),
@@ -515,16 +515,18 @@ function ClimaLand.make_update_aux(
                 S_s,
             )
 
-            areai = getproperty(area_index, hydraulics.compartment_labels[i])
-            areaip1 =
-                getproperty(area_index, hydraulics.compartment_labels[ip1])
+            areai = getproperty(area_index, labels[i])
+            areaip1 = getproperty(area_index, labels[ip1])
+
+            midpoint = hydraulics.h_stem / 2
+            midpointip1 = hydraulics.h_stem + (hydraulics.h_leaf / 2)
 
             # Compute the flux*area between the current compartment `i`
             # and the compartment above.
             @. fa.:($$i) =
                 PlantHydraulics.flux(
-                    hydraulics.compartment_midpoints[i],
-                    hydraulics.compartment_midpoints[ip1],
+                    midpoint,
+                    midpointip1,
                     ψ.:($$i),
                     ψ.:($$ip1),
                     PlantHydraulics.hydraulic_conductivity(
@@ -546,7 +548,7 @@ function ClimaLand.make_update_aux(
         T_canopy = canopy_temperature(canopy.energy, canopy, Y, p, t)
 
         # update moisture stress
-        i_end = n_stem + n_leaf
+        i_end = (hydraulics.h_stem > 0 ? 1 : 0) + 1
         @. β = moisture_stress(ψ.:($$i_end) * ρ_l * grav, sc, pc)
 
         # Update Rd, An, Vcmax25 (if applicable to model) in place
@@ -566,7 +568,7 @@ function ClimaLand.make_update_aux(
         @. GPP = compute_GPP(An, K, LAI, Ω)
         @. gs = medlyn_conductance(g0, Drel, medlyn_factor, An, c_co2_air)
         # update autotrophic respiration
-        h_canopy = hydraulics.compartment_surfaces[end]
+        h_canopy = hydraulics.h_stem + hydraulics.h_leaf
         @. Ra = compute_autrophic_respiration(
             canopy.autotrophic_respiration,
             Vcmax25,
@@ -593,7 +595,7 @@ function make_compute_exp_tendency(
         <:Union{BeerLambertModel, TwoStreamModel},
         <:Union{FarquharModel, OptimalityFarquharModel},
         <:MedlynConductanceModel,
-        <:PlantHydraulicsModel,
+        <:BigLeafHydraulicsModel,
         <:Union{PrescribedCanopyTempModel, BigLeafEnergyModel},
     },
 ) where {FT}

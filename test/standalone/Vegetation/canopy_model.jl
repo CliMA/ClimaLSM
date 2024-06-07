@@ -143,38 +143,15 @@ for FT in (Float32, Float64)
             conductivity_model = conductivity_model,
             retention_model = retention_model,
         )
-        Δz = FT(1.0) # height of compartments
-        n_stem = Int64(0) # number of stem elements
-        n_leaf = Int64(1) # number of leaf elements
-        compartment_centers =
-            FT.(
-                Vector(
-                    range(
-                        start = Δz / 2,
-                        step = Δz,
-                        stop = Δz * (n_stem + n_leaf) - (Δz / 2),
-                    ),
-                ),
-            )
-        compartment_faces =
-            FT.(
-                Vector(
-                    range(
-                        start = 0.0,
-                        step = Δz,
-                        stop = Δz * (n_stem + n_leaf),
-                    ),
-                )
-            )
+        h_stem = FT(0.0)
+        h_leaf = FT(1.0)
 
         ψ_soil0 = FT(0.0)
         soil_driver = PrescribedSoil(FT)
-        plant_hydraulics = PlantHydraulics.PlantHydraulicsModel{FT}(;
+        plant_hydraulics = PlantHydraulics.BigLeafHydraulicsModel{FT}(;
             parameters = param_set,
-            n_stem = n_stem,
-            n_leaf = n_leaf,
-            compartment_surfaces = compartment_faces,
-            compartment_midpoints = compartment_centers,
+            h_stem = h_stem,
+            h_leaf = h_leaf,
         )
         canopy = ClimaLand.Canopy.CanopyModel{FT}(;
             parameters = shared_params,
@@ -332,7 +309,7 @@ for FT in (Float32, Float64)
         ) < 0.5
 
         @test ClimaLand.surface_evaporative_scaling(canopy, Y, p) == FT(1.0)
-        @test ClimaLand.surface_height(canopy, Y, p) == compartment_faces[1]
+        @test ClimaLand.surface_height(canopy, Y, p) == h_stem
         T_sfc = FT.(T_atmos(t0))
         @test Array(parent(ClimaLand.surface_temperature(canopy, Y, p, t0))) ==
               [T_sfc]
@@ -403,36 +380,13 @@ for FT in (Float32, Float64)
             conductivity_model = conductivity_model,
             retention_model = retention_model,
         )
-        Δz = FT(1.0) # height of compartments
-        n_stem = Int64(0) # number of stem elements
-        n_leaf = Int64(1) # number of leaf elements
-        compartment_centers =
-            FT.(
-                Vector(
-                    range(
-                        start = Δz / 2,
-                        step = Δz,
-                        stop = Δz * (n_stem + n_leaf) - (Δz / 2),
-                    ),
-                ),
-            )
-        compartment_faces =
-            FT.(
-                Vector(
-                    range(
-                        start = 0.0,
-                        step = Δz,
-                        stop = Δz * (n_stem + n_leaf),
-                    ),
-                )
-            )
+        h_stem = FT(0.0)
+        h_leaf = FT(1.0)
 
-        plant_hydraulics = PlantHydraulics.PlantHydraulicsModel{FT}(;
+        plant_hydraulics = PlantHydraulics.BigLeafHydraulicsModel{FT}(;
             parameters = param_set,
-            n_stem = n_stem,
-            n_leaf = n_leaf,
-            compartment_surfaces = compartment_faces,
-            compartment_midpoints = compartment_centers,
+            h_stem = h_stem,
+            h_leaf = h_leaf,
         )
 
         t0 = FT(100)
@@ -621,29 +575,8 @@ for FT in (Float32, Float64)
             conductivity_model = conductivity_model,
             retention_model = retention_model,
         )
-        Δz = FT(1.0) # height of compartments
-        n_stem = Int64(0) # number of stem elements
-        n_leaf = Int64(1) # number of leaf elements
-        compartment_centers =
-            FT.(
-                Vector(
-                    range(
-                        start = Δz / 2,
-                        step = Δz,
-                        stop = Δz * (n_stem + n_leaf) - (Δz / 2),
-                    ),
-                ),
-            )
-        compartment_faces =
-            FT.(
-                Vector(
-                    range(
-                        start = 0.0,
-                        step = Δz,
-                        stop = Δz * (n_stem + n_leaf),
-                    ),
-                )
-            )
+        h_stem = FT(0.0)
+        h_leaf = FT(1.0)
 
         ψ_soil0 = FT(0.0)
         T_soil0 = FT(290)
@@ -656,12 +589,10 @@ for FT in (Float32, Float64)
             FT(0.98),
         )
 
-        plant_hydraulics = PlantHydraulics.PlantHydraulicsModel{FT}(;
+        plant_hydraulics = PlantHydraulics.BigLeafHydraulicsModel{FT}(;
             parameters = param_set,
-            n_stem = n_stem,
-            n_leaf = n_leaf,
-            compartment_surfaces = compartment_faces,
-            compartment_midpoints = compartment_centers,
+            h_stem = h_stem,
+            h_leaf = h_leaf,
         )
         autotrophic_parameters = AutotrophicRespirationParameters(FT)
         autotrophic_respiration_model =

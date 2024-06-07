@@ -224,13 +224,14 @@ lsm_aux_domain_names(m::SoilCanopyModel) =
         FT,
         MM <: Soil.Biogeochemistry.SoilCO2Model{FT},
         SM <: Soil.RichardsModel{FT},
-        RM <: Canopy.CanopyModel{FT}
+        RM <: Canopy.CanopyModel{FT, PlantHydraulics.BigLeafHydraulicsModel{FT}}
         }
 
 A method which makes a function; the returned function
 updates the additional auxiliary variables for the integrated model,
 as well as updates the boundary auxiliary variables for all component
-models. 
+models. This version is for an integrated canopy model which suports a
+multi-layered hydraulics model. 
 
 This function is called each ode function evaluation, prior to the tendency function
 evaluation.
@@ -241,7 +242,7 @@ function make_update_boundary_fluxes(
     FT,
     MM <: Soil.Biogeochemistry.SoilCO2Model{FT},
     SM <: Soil.EnergyHydrology{FT},
-    RM <: Canopy.CanopyModel{FT},
+    RM <: Canopy.CanopyModel{FT, PlantHydraulics.BigLeafHydraulicsModel{FT}},
 }
     update_soil_bf! = make_update_boundary_fluxes(land.soil)
     update_soilco2_bf! = make_update_boundary_fluxes(land.soilco2)
@@ -256,16 +257,20 @@ function make_update_boundary_fluxes(
 
         area_index = p.canopy.hydraulics.area_index
 
-        above_ground_area_index = getproperty(
-            area_index,
-            land.canopy.hydraulics.compartment_labels[1],
-        )
+        labels = land.canopy.hydraulics.h_stem > 0 ? [:stem, :leaf] : [:leaf]
+
+        above_ground_area_index = getproperty(area_index, labels[1])
+
+        h_stem = land.canopy.hydraulics.h_stem
+        h_leaf = land.canopy.hydraulics.h_leaf
+
+        midpoint = labels[1] == :stem ? h_stem / 2 : model.h_leaf / 2
 
         @. p.root_extraction =
             (area_index.root + above_ground_area_index) / 2 *
             PlantHydraulics.flux(
                 z,
-                land.canopy.hydraulics.compartment_midpoints[1],
+                midpoint,
                 p.soil.ψ,
                 p.canopy.hydraulics.ψ.:1,
                 PlantHydraulics.hydraulic_conductivity(
@@ -278,6 +283,87 @@ function make_update_boundary_fluxes(
                 ),
             ) *
             (land.canopy.hydraulics.parameters.root_distribution(z))
+        @. p.root_energy_extraction =
+            p.root_extraction * ClimaLand.Soil.volumetric_internal_energy_liq(
+                p.soil.T,
+                land.soil.parameters,
+            )
+
+        # Radiation
+        lsm_radiant_energy_fluxes!(
+            p,
+            land.canopy.radiative_transfer,
+            land.canopy,
+            land.soil,
+            Y,
+            t,
+        )
+        update_soil_bf!(p, Y, t)
+        update_canopy_bf!(p, Y, t)
+        update_soilco2_bf!(p, Y, t)
+    end
+    return update_boundary_fluxes!
+end
+
+"""
+    make_update_boundary_fluxes(
+        land::SoilCanopyModel{FT, MM, SM, RM},
+    ) where {
+        FT,
+        MM <: Soil.Biogeochemistry.SoilCO2Model{FT},
+        SM <: Soil.RichardsModel{FT},
+        RM <: Canopy.CanopyModel{FT, PlantHydraulics.BigLeafHydraulicsModel{FT}}
+    }
+
+A method which makes a function; the returned function updates the additional
+auxiliary variables for the integrated model, as well as updates the boundary
+auxiliary variables for all component models. This version is for an integrated
+canopy model which supports only a big leaf hydraulics model.
+
+This function is called each ode function evaluation, prior to the tendency
+function evaluation.
+"""
+function make_update_boundary_fluxes(
+    land::SoilCanopyModel{FT, MM, SM, RM},
+) where {
+    FT,
+    MM <: Soil.Biogeochemistry.SoilCO2Model{FT},
+    SM <: Soil.EnergyHydrology{FT},
+    RM <: Canopy.CanopyModel{FT, PlantHydraulics.BigLeafHydraulicsModel{FT}},
+}
+    update_soil_bf! = make_update_boundary_fluxes(land.soil)
+    update_soilco2_bf! = make_update_boundary_fluxes(land.soilco2)
+    update_canopy_bf! = make_update_boundary_fluxes(land.canopy)
+    function update_boundary_fluxes!(p, Y, t)
+        # update root extraction
+        z =
+            ClimaCore.Fields.coordinate_field(
+                land.soil.domain.space.subsurface,
+            ).z
+        (; h_stem, h_leaf, conductivity_model) =
+            land.canopy.hydraulics.parameters
+        (label, midpoint) =
+            h_stem > 0 ? (:stem, h_stem / 2) : (:leaf, h_leaf / 2)
+
+        area_index = p.canopy.hydraulics.area_index
+
+        above_ground_area_index = getproperty(area_index, label)
+
+        @. p.root_extraction =
+            PlantHydraulics.flux(
+                z,
+                midpoint,
+                p.soil.ψ,
+                p.canopy.hydraulics.ψ.:1,
+                PlantHydraulics.hydraulic_conductivity(
+                    conductivity_model,
+                    p.soil.ψ,
+                ),
+                PlantHydraulics.hydraulic_conductivity(
+                    conductivity_model,
+                    p.canopy.hydraulics.ψ.:1,
+                ),
+            ) * (land.canopy.hydraulics.parameters.root_distribution(z))
         @. p.root_energy_extraction =
             p.root_extraction * ClimaLand.Soil.volumetric_internal_energy_liq(
                 p.soil.T,
@@ -456,7 +542,7 @@ end
     PlantHydraulics.root_water_flux_per_ground_area!(
         fa::ClimaCore.Fields.Field,
         s::PrognosticSoil,
-        model::Canopy.PlantHydraulics.PlantHydraulicsModel{FT},
+        model::Canopy.PlantHydraulics.BigLeafHydraulicsModel{FT},
         Y::ClimaCore.Fields.FieldVector,
         p::NamedTuple,
         t,
@@ -475,7 +561,7 @@ roots and soil at each soil layer.
 function PlantHydraulics.root_water_flux_per_ground_area!(
     fa::ClimaCore.Fields.Field,
     s::PrognosticSoil,
-    model::Canopy.PlantHydraulics.PlantHydraulicsModel{FT},
+    model::Canopy.PlantHydraulics.BigLeafHydraulicsModel{FT},
     Y::ClimaCore.Fields.FieldVector,
     p::NamedTuple,
     t,

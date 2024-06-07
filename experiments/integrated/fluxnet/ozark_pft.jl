@@ -168,7 +168,7 @@ canopy_component_types = (;
     radiative_transfer = Canopy.TwoStreamModel{FT},
     photosynthesis = Canopy.FarquharModel{FT},
     conductance = Canopy.MedlynConductanceModel{FT},
-    hydraulics = Canopy.PlantHydraulicsModel{FT},
+    hydraulics = Canopy.BigLeafHydraulicsModel{FT},
     energy = Canopy.BigLeafEnergyModel{FT},
 )
 # Individual Component arguments
@@ -209,13 +209,8 @@ plant_hydraulics_ps = PlantHydraulics.PlantHydraulicsParameters(;
     conductivity_model = conductivity_model,
     retention_model = retention_model,
 )
-plant_hydraulics_args = (
-    parameters = plant_hydraulics_ps,
-    n_stem = n_stem,
-    n_leaf = n_leaf,
-    compartment_midpoints = compartment_midpoints,
-    compartment_surfaces = compartment_surfaces,
-)
+plant_hydraulics_args =
+    (parameters = plant_hydraulics_ps, h_stem = h_stem, h_leaf = h_leaf)
 
 energy_args = (parameters = Canopy.BigLeafEnergyParameters{FT}(ac_canopy),)
 
@@ -276,12 +271,12 @@ Y.soil.ρe_int =
 Y.soilco2.C .= FT(0.000412) # set to atmospheric co2, mol co2 per mol air
 ψ_stem_0 = FT(-1e5 / 9800) # pressure in the leaf divided by rho_liquid*gravitational acceleration [m] 
 ψ_leaf_0 = FT(-2e5 / 9800)
-ψ_comps = n_stem > 0 ? [ψ_stem_0, ψ_leaf_0] : ψ_leaf_0
+ψ_comps = h_stem > 0 ? [ψ_stem_0, ψ_leaf_0] : ψ_leaf_0
 
 S_l_ini =
     inverse_water_retention_curve.(retention_model, ψ_comps, plant_ν, plant_S_s)
 
-for i in 1:(n_stem + n_leaf)
+for i in 1:(h_stem < 0 + 1)
     Y.canopy.hydraulics.ϑ_l.:($i) .=
         augmented_liquid_fraction.(plant_ν, S_l_ini[i])
 end

@@ -9,8 +9,6 @@ dz_bottom = FT(1.5)
 dz_top = FT(0.025)
 
 # Stem and leaf compartments and their heights:
-n_stem = Int64(1)
-n_leaf = Int64(1)
 h_stem = FT(9) # m
 h_leaf = FT(9.5) # m
 

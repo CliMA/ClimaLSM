@@ -93,7 +93,7 @@ function run_fluxnet(
         radiative_transfer = Canopy.TwoStreamModel{FT},
         photosynthesis = Canopy.FarquharModel{FT},
         conductance = Canopy.MedlynConductanceModel{FT},
-        hydraulics = Canopy.PlantHydraulicsModel{FT},
+        hydraulics = Canopy.BigLeafHydraulicsModel{FT},
         energy = Canopy.BigLeafEnergyModel{FT},
     )
     # Individual Component arguments
@@ -180,13 +180,7 @@ function run_fluxnet(
         conductivity_model = params.plant_hydraulics.conductivity_model,
         retention_model = params.plant_hydraulics.retention_model,
     )
-    plant_hydraulics_args = (
-        parameters = plant_hydraulics_ps,
-        n_stem = setup.n_stem,
-        n_leaf = setup.n_leaf,
-        compartment_midpoints = domain.compartment_midpoints,
-        compartment_surfaces = domain.compartment_surfaces,
-    )
+    plant_hydraulics_args = (parameters = plant_hydraulics_ps, h_stem, h_leaf)
 
     energy_args = (
         parameters = Canopy.BigLeafEnergyParameters{FT}(
@@ -261,7 +255,7 @@ function run_fluxnet(
     Y.soilco2.C .= FT(0.000412) # set to atmospheric co2, mol co2 per mol air
     ψ_stem_0 = FT(-1e5 / 9800) # pressure in the leaf divided by rho_liquid*gravitational acceleration [m] 
     ψ_leaf_0 = FT(-2e5 / 9800)
-    ψ_comps = setup.n_stem > 0 ? [ψ_stem_0, ψ_leaf_0] : ψ_leaf_0
+    ψ_comps = setup.h_stem > 0 ? [ψ_stem_0, ψ_leaf_0] : ψ_leaf_0
 
     S_l_ini =
         inverse_water_retention_curve.(
@@ -271,7 +265,7 @@ function run_fluxnet(
             params.plant_hydraulics.S_s,
         )
 
-    for i in 1:(setup.n_stem + setup.n_leaf)
+    for i in 1:(setup.h_stem > 0 + 1)
         Y.canopy.hydraulics.ϑ_l.:($i) .=
             augmented_liquid_fraction.(drivers.plant_ν, S_l_ini[i])
     end

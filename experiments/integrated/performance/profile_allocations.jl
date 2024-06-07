@@ -86,14 +86,10 @@ dz_bottom = FT(2.0)
 dz_top = FT(0.2)
 soil_depth = FT(5)
 z_sfc = FT(0)
-n_stem = Int64(1)
-n_leaf = Int64(1)
 h_stem = FT(9) # m
 h_leaf = FT(9.5) # m
 
 h_canopy = h_stem + h_leaf
-compartment_midpoints = [h_stem / 2, h_stem + h_leaf / 2]
-compartment_surfaces = [z_sfc, h_stem, h_canopy]
 
 land_domain = ClimaLand.Domains.SphericalShell(;
     radius = FT(6.3781e6),
@@ -258,7 +254,7 @@ canopy_component_types = (;
     radiative_transfer = Canopy.TwoStreamModel{FT},
     photosynthesis = Canopy.FarquharModel{FT},
     conductance = Canopy.MedlynConductanceModel{FT},
-    hydraulics = Canopy.PlantHydraulicsModel{FT},
+    hydraulics = Canopy.BigLeafHydraulicsModel{FT},
     energy = Canopy.BigLeafEnergyModel{FT},
 )
 # Individual Component arguments
@@ -287,13 +283,8 @@ plant_hydraulics_ps = PlantHydraulics.PlantHydraulicsParameters(;
     conductivity_model = conductivity_model,
     retention_model = retention_model,
 )
-plant_hydraulics_args = (
-    parameters = plant_hydraulics_ps,
-    n_stem = n_stem,
-    n_leaf = n_leaf,
-    compartment_midpoints = compartment_midpoints,
-    compartment_surfaces = compartment_surfaces,
-)
+plant_hydraulics_args =
+    (parameters = plant_hydraulics_ps, h_stem = h_stem, h_leaf = h_leaf)
 
 # Canopy component args
 canopy_component_args = (;
