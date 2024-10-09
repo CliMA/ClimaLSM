@@ -461,10 +461,7 @@ function net_radiation(
     T_sfc = surface_temperature(model, Y, p, t)
     α_sfc = surface_albedo(model, Y, p)
     ϵ_sfc = surface_emissivity(model, Y, p)
-    # Recall that the user passed the LW and SW downwelling radiation,
-    # where positive values indicate toward surface, so we need a negative sign out front
-    # in order to inidicate positive R_n  = towards atmos.
-    R_n = @.(-(1 - α_sfc) * SW_d - ϵ_sfc * (LW_d - _σ * T_sfc^4))
+    R_n = @.((1 - α_sfc) * SW_d + ϵ_sfc * (LW_d - _σ * T_sfc^4)) # positive if the land absorbs energy
     return R_n
 end
 

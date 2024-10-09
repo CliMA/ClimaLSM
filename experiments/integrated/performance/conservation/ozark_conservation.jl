@@ -224,8 +224,7 @@ for float_type in (Float32, Float64)
         ]
         # Radiation is computed in LW and SW components
         # with positive numbers indicating the soil gaining energy.
-        soil_Rn =
-            -1 .* [parent(sv.saveval[k].soil.R_n)[1] for k in 2:length(sol.t)]
+        soil_Rn = [parent(sv.saveval[k].soil.R_n)[1] for k in 2:length(sol.t)]
         # Root sink term: a positive root extraction is a sink term for soil; add minus sign
         root_sink_energy = [
             sum(-1 .* sv.saveval[k].root_energy_extraction) for
@@ -239,7 +238,7 @@ for float_type in (Float32, Float64)
         # d[∫Idz] = [-(F_sfc - F_bot) + ∫Sdz]dt = -ΔF dt + ∫Sdz dt
         # N.B. in ClimaCore, sum(field) -> integral
         rhs_soil_energy =
-            -(LHF .+ SHF .+ soil_Rn .- soil_bottom_flux) .+ root_sink_energy
+            -(LHF .+ SHF .- soil_Rn .- soil_bottom_flux) .+ root_sink_energy
 
         net_soil_energy_storage =
             [sum(sol.u[k].soil.ρe_int)[1] for k in 1:length(sol.t)]

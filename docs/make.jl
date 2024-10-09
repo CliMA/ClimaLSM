@@ -52,6 +52,7 @@ include("list_diagnostics.jl")
 pages = Any[
     "Home" => "index.md",
     "Getting Started" => "getting_started.md",
+    "Variables used in ClimaLand" => "glossary.md",
     "Tutorials" => tutorials,
     "Standalone models" => standalone_models,
     "Diagnostics" => diagnostics,

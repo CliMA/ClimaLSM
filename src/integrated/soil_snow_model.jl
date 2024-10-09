@@ -203,13 +203,11 @@ function make_update_boundary_fluxes(
         ρe_falling_snow = -_LH_f0 * _ρ_liq # per unit vol of liquid water
         @. p.atmos_energy_flux =
             (1 - p.snow.snow_cover_fraction) * (
-                p.soil.turbulent_fluxes.lhf +
-                p.soil.turbulent_fluxes.shf +
+                p.soil.turbulent_fluxes.lhf + p.soil.turbulent_fluxes.shf -
                 p.soil.R_n
             ) +
             p.snow.snow_cover_fraction * (
-                p.snow.turbulent_fluxes.lhf +
-                p.snow.turbulent_fluxes.shf +
+                p.snow.turbulent_fluxes.lhf + p.snow.turbulent_fluxes.shf -
                 p.snow.R_n
             ) +
             p.drivers.P_snow * ρe_falling_snow
@@ -359,8 +357,7 @@ function snow_boundary_fluxes!(
     @. p.snow.total_energy_flux =
         P_snow * ρe_falling_snow +
         (
-            p.snow.turbulent_fluxes.lhf +
-            p.snow.turbulent_fluxes.shf +
+            p.snow.turbulent_fluxes.lhf + p.snow.turbulent_fluxes.shf -
             p.snow.R_n - p.snow.energy_runoff - p.ground_heat_flux
         ) * p.snow.snow_cover_fraction
 end
@@ -407,7 +404,7 @@ function soil_boundary_fluxes!(
 
     @. p.soil.top_bc.heat =
         (1 - p.snow.snow_cover_fraction) * (
-            p.soil.R_n +
+            -p.soil.R_n +
             p.soil.turbulent_fluxes.lhf +
             p.soil.turbulent_fluxes.shf
         ) +

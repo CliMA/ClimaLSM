@@ -47,11 +47,11 @@
 # ``
 
 # ``
-# (1-σ) (R_n+ SHF + LHF)_{soil} + σG_{undersnow} = -κ_{soil} \frac{\partial T}{\partial z}|_{z = z_{sfc}}
+# (1-σ) (SHF + LHF - R_n)_{soil} + σG_{undersnow} = -κ_{soil} \frac{\partial T}{\partial z}|_{z = z_{sfc}}
 # ``
 
 # ``
-# G_{undersnow} = (R_n+ SHF + LHF)_{snow} - F_{intosnow}
+# G_{undersnow} = (SHF + LHF - R_n)_{snow} - F_{intosnow}
 # ``
 
 # ``
@@ -60,7 +60,7 @@
 
 
 # ``
-# R_n = -(1-α)*SW↓ -LW↓ + σ_{SB} T_{sfc}^4
+# R_n = (1-α)*SW↓ + LW↓ - σ_{SB} T_{sfc}^4
 # ``
 
 # where the water fluxes are : `I` the infiltration as defined in [1], `P_liq` (m/s) the
@@ -419,7 +419,7 @@ plot(
     legend = :bottomright,
 )
 plot!(sol.t ./ 86400, turbulent_energy_flux, label = "Turbulent fluxes")
-plot!(sol.t ./ 86400, R_n .+ turbulent_energy_flux, label = "Net flux")
+plot!(sol.t ./ 86400, turbulent_energy_flux .- R_n, label = "Net flux")
 savefig("energy_f.png")
 # ![](energy_f.png)
 

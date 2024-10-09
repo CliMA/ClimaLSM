@@ -84,7 +84,7 @@ import ClimaLand.Parameters as LP
 
     # Check if aux update occurred correctly
     @test p.snow.R_n ==
-          @. (-(1 - α_snow) * 20.0f0 - ϵ_snow * (20.0f0 - _σ * p.snow.T_sfc^4))
+          @. ((1 - α_snow) * 20.0f0 + ϵ_snow * (20.0f0 - _σ * p.snow.T_sfc^4))
     @test p.snow.R_n == ClimaLand.net_radiation(
         model.boundary_conditions.radiation,
         model,
@@ -143,8 +143,9 @@ import ClimaLand.Parameters as LP
     )
     @test dY.snow.S == net_water_fluxes
     @test dY.snow.U == @.(
-        -p.snow.turbulent_fluxes.shf - p.snow.turbulent_fluxes.lhf -
-        p.snow.R_n + p.snow.energy_runoff
+        -p.snow.turbulent_fluxes.shf - p.snow.turbulent_fluxes.lhf +
+        p.snow.R_n +
+        p.snow.energy_runoff
     )
 
 

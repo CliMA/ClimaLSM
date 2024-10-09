@@ -446,7 +446,7 @@ function make_update_aux(model::BucketModel{FT}) where {FT}
         # The below must be adjusted to compute F_sfc over snow and over soil
         # if we want the snow cover fraction to be intermediate between 0 and 1.
         @. p.bucket.F_sfc = (
-            p.bucket.turbulent_fluxes.shf .+ p.bucket.turbulent_fluxes.lhf +
+            p.bucket.turbulent_fluxes.shf .+ p.bucket.turbulent_fluxes.lhf -
             p.bucket.R_n
         ) # Eqn (21)
         _T_freeze = LP.T_freeze(model.parameters.earth_param_set)

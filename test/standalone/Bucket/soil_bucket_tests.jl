@@ -215,7 +215,7 @@ for FT in (Float32, Float64)
             F_water_sfc = FT(precip(t0)) .+ p.bucket.turbulent_fluxes.vapor_flux
             F_sfc =
                 p.bucket.turbulent_fluxes.lhf .+
-                p.bucket.turbulent_fluxes.shf .+ p.bucket.R_n
+                p.bucket.turbulent_fluxes.shf .- p.bucket.R_n
             surface_space = model.domain.space.surface
             A_sfc = sum(ones(surface_space))
 

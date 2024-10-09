@@ -800,7 +800,7 @@ function soil_boundary_fluxes!(
     @. p.soil.top_bc.water =
         p.soil.infiltration + p.soil.turbulent_fluxes.vapor_flux_liq
     @. p.soil.top_bc.heat =
-        p.soil.R_n + p.soil.turbulent_fluxes.lhf + p.soil.turbulent_fluxes.shf
+        p.soil.turbulent_fluxes.lhf + p.soil.turbulent_fluxes.shf - p.soil.R_n
 end
 
 """

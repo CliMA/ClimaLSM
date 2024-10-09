@@ -192,13 +192,11 @@ _LH_f0 = FT(LP.LH_f0(earth_param_set))
 _ρ_liq = FT(LP.ρ_cloud_liq(earth_param_set))
 ρe_falling_snow = -_LH_f0 * _ρ_liq # per unit vol of liquid water
 @test p.atmos_energy_flux == @. (1 - p.snow.snow_cover_fraction) * (
-             p.soil.turbulent_fluxes.lhf +
-             p.soil.turbulent_fluxes.shf +
+             p.soil.turbulent_fluxes.lhf + p.soil.turbulent_fluxes.shf -
              p.soil.R_n
          ) +
          p.snow.snow_cover_fraction * (
-             p.snow.turbulent_fluxes.lhf +
-             p.snow.turbulent_fluxes.shf +
+             p.snow.turbulent_fluxes.lhf + p.snow.turbulent_fluxes.shf -
              p.snow.R_n
          ) +
          p.drivers.P_snow * ρe_falling_snow

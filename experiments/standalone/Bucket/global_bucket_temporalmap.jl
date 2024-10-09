@@ -271,7 +271,7 @@ F_sfc = [
     Array(
         Remapping.interpolate(
             remapper,
-            saved_values.saveval[k].bucket.R_n .+
+            -1 .* saved_values.saveval[k].bucket.R_n .+
             saved_values.saveval[k].bucket.turbulent_fluxes.lhf .+
             saved_values.saveval[k].bucket.turbulent_fluxes.shf,
         ),

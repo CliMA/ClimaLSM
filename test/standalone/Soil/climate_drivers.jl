@@ -229,7 +229,7 @@ for FT in (Float32, Float64)
 
             expected_water_flux = @. FT(precip(t)) .+ conditions.vapor_flux_liq
             @test computed_water_flux == expected_water_flux
-            expected_energy_flux = @. R_n + conditions.lhf + conditions.shf
+            expected_energy_flux = @. conditions.lhf + conditions.shf - R_n
             @test computed_energy_flux == expected_energy_flux
 
             # Test soil resistances for liquid water
