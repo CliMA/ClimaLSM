@@ -263,7 +263,6 @@ function turbulent_fluxes(
     d_sfc = displacement_height(model, Y, p)
     u_air = p.drivers.u
     h_air = atmos.h
-
     return turbulent_fluxes_at_a_point.(
         T_sfc,
         q_sfc,

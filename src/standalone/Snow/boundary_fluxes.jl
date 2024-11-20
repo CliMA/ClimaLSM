@@ -101,6 +101,43 @@ function snow_boundary_fluxes!(
     t,
 ) where {FT}
     bc = model.boundary_conditions
+    # original Tsfc code (Ts = Tbulk):
+    # @. p.snow.T_sfc = snow_surface_temperature_bulk(p.snow.T)
+    parameters = model.parameters
+    #  output =
+    #       snow_surface_temperature.(
+    #           p.drivers.u,
+    #           p.drivers.T,
+    #           p.drivers.P,
+    #           parameters.z_0m,
+    #          parameters.z_0b,
+    #         p.drivers.q,
+    #   bc.atmos.h,
+    #        Y.snow.S,
+    #       p.snow.T,
+    #      p.drivers.thermal_state.ρ,
+    #     p.snow.energy_runoff,
+    #    p.drivers.LW_d,
+    #   p.drivers.SW_d,
+    #  parameters,
+    #)
+
+    output =
+        kat_snow_surface_temperature.(
+            p.drivers.u,
+            p.drivers.thermal_state,
+            bc.atmos.h,
+            Y.snow.S,
+            p.snow.T,
+            p.drivers.LW_d,
+            p.drivers.SW_d,
+            p.snow.q_l,
+            t,
+            parameters,
+        )
+
+    @. p.snow.T_sfc = output.T_s
+    @. p.snow.ΔF = output.ΔF
     p.snow.turbulent_fluxes .= turbulent_fluxes(bc.atmos, model, Y, p, t)
     p.snow.R_n .= net_radiation(bc.radiation, model, Y, p, t)
     # How does rain affect the below?
@@ -117,13 +154,13 @@ function snow_boundary_fluxes!(
     _LH_f0 = FT(LP.LH_f0(model.parameters.earth_param_set))
     _ρ_liq = FT(LP.ρ_cloud_liq(model.parameters.earth_param_set))
     ρe_falling_snow = -_LH_f0 * _ρ_liq # per unit vol of liquid water
-
     # positive fluxes are TOWARDS atmos
     @. p.snow.total_energy_flux =
         P_snow * ρe_falling_snow +
         (
             p.snow.turbulent_fluxes.lhf +
             p.snow.turbulent_fluxes.shf +
-            p.snow.R_n - p.snow.energy_runoff
+            p.snow.R_n - p.snow.energy_runoff#) * p.snow.snow_cover_fraction
+            + p.snow.ΔF
         ) * p.snow.snow_cover_fraction
 end

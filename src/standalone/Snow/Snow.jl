@@ -12,7 +12,7 @@ using ClimaLand:
     net_radiation,
     AbstractModel,
     heaviside
-
+using SurfaceFluxes
 import ClimaLand:
     AbstractBC,
     make_update_aux,
@@ -218,6 +218,7 @@ auxiliary_vars(::SnowModel) = (
     :applied_energy_flux,
     :applied_water_flux,
     :snow_cover_fraction,
+    :ΔF,
 )
 
 auxiliary_types(::SnowModel{FT}) where {FT} = (
@@ -235,9 +236,11 @@ auxiliary_types(::SnowModel{FT}) where {FT} = (
     FT,
     FT,
     FT,
+    FT,
 )
 
 auxiliary_domain_names(::SnowModel) = (
+    :surface,
     :surface,
     :surface,
     :surface,
@@ -269,8 +272,6 @@ function ClimaLand.make_update_aux(model::SnowModel{FT}) where {FT}
 
         @. p.snow.T =
             snow_bulk_temperature(Y.snow.U, Y.snow.S, p.snow.q_l, parameters)
-
-        @. p.snow.T_sfc = snow_surface_temperature(p.snow.T)
 
         @. p.snow.water_runoff =
             compute_water_runoff(Y.snow.S, p.snow.q_l, p.snow.T, parameters)
