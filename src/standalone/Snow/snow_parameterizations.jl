@@ -319,8 +319,7 @@ function compute_water_runoff(S::FT, q_l::FT, T::FT, parameters) where {FT}
     depth = snow_depth(S, ρ_snow, _ρ_l)
     τ = runoff_timescale(depth, Ksat, Δt)
     q_l_max::FT = maximum_liquid_mass_fraction(T, ρ_snow, parameters)
-    return -(q_l - q_l_max) * heaviside(q_l - q_l_max) / τ * S /
-           max(1 - q_l, FT(0.01))
+    return -(q_l - q_l_max) * heaviside(q_l - q_l_max) / τ * S / (1 - q_l_max)
 end
 
 
