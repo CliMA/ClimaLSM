@@ -322,6 +322,7 @@ function ClimaLand.make_compute_jacobian(model::EnergyHydrology{FT}) where {FT}
         # The derivative of the residual with respect to the prognostic variable
         ∂ϑres∂ϑ = matrix[@name(soil.ϑ_l), @name(soil.ϑ_l)]
         ∂ρeres∂ρe = matrix[@name(soil.ρe_int), @name(soil.ρe_int)]
+        ∂ρeres∂ϑ =  matrix[@name(soil.ρe_int), @name(soil.ϑ_l)]
         # If the top BC is a `MoistureStateBC`, add the term from the top BC
         #  flux before applying divergence
         if haskey(p.soil, :dfluxBCdY)
@@ -373,6 +374,30 @@ function ClimaLand.make_compute_jacobian(model::EnergyHydrology{FT}) where {FT}
                     )
                 ) - (I,)
         end
+        @. ∂ρeres∂ϑ =
+            -dtγ * (
+                divf2c_matrix() ⋅
+                MatrixFields.DiagonalMatrixRow(
+                    -interpc2f(
+                        volumetric_internal_energy_liq(
+                            p.soil.T,
+                            model.parameters.earth_param_set,
+                        ) * p.soil.K,
+                    )
+                ) ⋅
+                gradc2f_matrix() ⋅ MatrixFields.DiagonalMatrixRow(
+                    ClimaLand.Soil.dψdϑ(
+                        hydrology_cm,
+                        Y.soil.ϑ_l,
+                        ν - Y.soil.θ_i, #ν_eff
+                        θ_r,
+                        S_s,
+                    ),
+                )
+            ) - (I,)
+        
+
+        
         @. ∂ρeres∂ρe =
             -dtγ * (
                 divf2c_matrix() ⋅
