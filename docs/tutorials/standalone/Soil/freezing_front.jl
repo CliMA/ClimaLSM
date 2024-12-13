@@ -221,7 +221,7 @@ ode_algo = CTS.IMEXAlgorithm(
     timestepper,
     CTS.NewtonsMethod(
         max_iters = 3,
-        update_j = CTS.UpdateEvery(CTS.NewTimeStep),
+        update_j = CTS.UpdateEvery(CTS.NewNewtonIteration),
     ),
 );
 

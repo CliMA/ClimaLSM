@@ -154,12 +154,11 @@ function ImplicitEquationJacobian(Y::ClimaCore.Fields.FieldVector)
     # Here, we take the convention that each pair has order (T_x, y) to produce ∂T_x/∂y as above
     off_diagonal_pairs = ((@name(soil.ρe_int), @name(soil.ϑ_l)),)
     available_off_diagonal_pairs =
-        MatrixFields.unrolled_filter(is_in_Y, off_diagonal_pairs)
+        MatrixFields.unrolled_filter(pair -> all(is_in_Y.(pair)),off_diagonal_pairs)
     implicit_off_diagonals = MatrixFields.unrolled_map(
-        var_tend,
-        var ->
-            (var_tend, var) =>
-                get_j_field(axes(MatrixFields.get_field(Y, var_tend)), FT),
+        pair ->
+            (pair[1], pair[2]) =>
+                get_j_field(axes(MatrixFields.get_field(Y, pair[1])), FT),
         available_off_diagonal_pairs,
     )
     # For explicitly-stepped variables, use the negative identity matrix

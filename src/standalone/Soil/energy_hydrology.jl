@@ -378,7 +378,7 @@ function ClimaLand.make_compute_jacobian(model::EnergyHydrology{FT}) where {FT}
             -dtγ * (
                 divf2c_matrix() ⋅
                 MatrixFields.DiagonalMatrixRow(
-                    -interpc2f(
+                    -interpc2f_op(
                         volumetric_internal_energy_liq(
                             p.soil.T,
                             model.parameters.earth_param_set,
