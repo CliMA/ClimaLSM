@@ -148,6 +148,20 @@ function ImplicitEquationJacobian(Y::ClimaCore.Fields.FieldVector)
                 get_j_field(axes(MatrixFields.get_field(Y, var)), FT),
         available_implicit_vars,
     )
+
+    # We include some terms ∂T_x/∂y where x ≠ y
+    # These are the off-diagonal terms in the Jacobian matrix
+    # Here, we take the convention that each pair has order (T_x, y) to produce ∂T_x/∂y as above
+    off_diagonal_pairs = ((@name(soil.ρe_int), @name(soil.ϑ_l)),)
+    available_off_diagonal_pairs =
+        MatrixFields.unrolled_filter(is_in_Y, off_diagonal_pairs)
+    implicit_off_diagonals = MatrixFields.unrolled_map(
+        var_tend,
+        var ->
+            (var_tend, var) =>
+                get_j_field(axes(MatrixFields.get_field(Y, var_tend)), FT),
+        available_off_diagonal_pairs,
+    )
     # For explicitly-stepped variables, use the negative identity matrix
     # Note: We have to use FT(-1) * I instead of -I because inv(-1) == -1.0,
     # which means that multiplying inv(-1) by a Float32 will yield a Float64.
@@ -156,12 +170,22 @@ function ImplicitEquationJacobian(Y::ClimaCore.Fields.FieldVector)
         available_explicit_vars,
     )
 
+    matrix = MatrixFields.FieldMatrix(
+        implicit_blocks...,
+        implicit_off_diagonals...,
+        explicit_blocks...,
+    )
 
-
-    matrix = MatrixFields.FieldMatrix(implicit_blocks..., explicit_blocks...)
-
-    # Set up block diagonal solver for block Jacobian
-    alg = MatrixFields.BlockDiagonalSolve()
+    # Choose algorithm based on whether off-diagonal blocks are present
+    # TODO change this to use dispatch on model type
+    if is_in_Y(@name(soil.ρe_int)) && is_in_Y(@name(soil.ϑ_l))
+        # Set up lower triangular solver for block Jacobian with off-diagonal blocks
+        # Specify which variable to compute ∂T_x/∂x for first
+        alg = MatrixFields.BlockLowerTriangularSolve(@name(soil.ϑ_l))
+    else
+        # Set up block diagonal solver for block Jacobian with no off-diagonal blocks
+        alg = MatrixFields.BlockDiagonalSolve()
+    end
     solver = MatrixFields.FieldMatrixSolver(alg, matrix, Y)
 
     return ImplicitEquationJacobian(matrix, solver)
