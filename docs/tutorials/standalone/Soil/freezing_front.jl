@@ -154,7 +154,7 @@ boundary_fluxes = (;
 # Sources are added as elements of a list of sources. Here we just add freezing
 # and thawing.
 
-sources = (PhaseChange{FT}(),);
+sources = (; :implicit => (PhaseChange{FT}(),), :explicit => ());
 
 # Now we can package this up in the
 # [`EnergyHydrology`](@ref ClimaLand.Soil.EnergyHydrology) model

@@ -121,7 +121,7 @@ end
         parameters::PS
         domain::D,
         boundary_conditions::NamedTuple,
-        sources::Tuple,
+        sources::NamedTuple,
         lateral_flow::Bool = false,
     ) where {FT, D, PS}
 
@@ -132,7 +132,7 @@ function EnergyHydrology{FT}(;
     parameters::EnergyHydrologyParameters{FT, PSE},
     domain::D,
     boundary_conditions::NamedTuple,
-    sources::Tuple,
+    sources::NamedTuple,
     lateral_flow::Bool = false,
 ) where {FT, D, PSE}
     @assert !lateral_flow
@@ -216,7 +216,7 @@ function ClimaLand.make_compute_exp_tendency(
             z,
         )
         # Source terms
-        for src in model.sources
+        for src in model.sources.explicit
             ClimaLand.source!(dY, src, Y, p, model)
         end
     end
@@ -284,8 +284,13 @@ function ClimaLand.make_compute_imp_tendency(
                 ) * gradc2f(p.soil.ψ + z),
             )
 
-        # Don't update the prognostic variables we're stepping explicitly
+        # Because source! adds the source contributions in place,
+        # zero this out first
         @. dY.soil.θ_i = 0
+
+        for src in model.sources.implicit
+            ClimaLand.source!(dY, src, Y, p, model)
+        end
     end
     return compute_imp_tendency!
 end
@@ -302,8 +307,22 @@ to using the modified Picard scheme of Celia et al. (1990).
 function ClimaLand.make_compute_jacobian(model::EnergyHydrology{FT}) where {FT}
     function compute_jacobian!(jacobian::ImplicitEquationJacobian, Y, p, dtγ, t)
         (; matrix) = jacobian
-        (; ν, hydrology_cm, S_s, θ_r, ρc_ds, earth_param_set) = model.parameters
+        (; ν,  hydrology_cm, S_s, θ_r, ρc_ds, earth_param_set) = model.parameters
+        _ρ_l = FT(LP.ρ_cloud_liq(earth_param_set))
+        _ρ_i = FT(LP.ρ_cloud_ice(earth_param_set))
+        Δz = model.domain.fields.Δz # center face distance
 
+        τ =  @. thermal_time(
+            volumetric_heat_capacity(
+                p.soil.θ_l,
+                Y.soil.θ_i,
+                ρc_ds,
+                earth_param_set,
+            ),
+            Δz,
+            p.soil.κ,
+        )
+        
         # Create divergence operator
         divf2c_op = Operators.DivergenceF2C()
         divf2c_matrix = MatrixFields.operator_matrix(divf2c_op)
@@ -321,6 +340,7 @@ function ClimaLand.make_compute_jacobian(model::EnergyHydrology{FT}) where {FT}
 
         # The derivative of the residual with respect to the prognostic variable
         ∂ϑres∂ϑ = matrix[@name(soil.ϑ_l), @name(soil.ϑ_l)]
+        ∂θires∂θi = matrix[@name(soil.θ_i), @name(soil.θ_i)]
         ∂ρeres∂ρe = matrix[@name(soil.ρe_int), @name(soil.ρe_int)]
         ∂ρeres∂ϑ =  matrix[@name(soil.ρe_int), @name(soil.ϑ_l)]
         # If the top BC is a `MoistureStateBC`, add the term from the top BC
@@ -336,8 +356,9 @@ function ClimaLand.make_compute_jacobian(model::EnergyHydrology{FT}) where {FT}
             # Add term from top boundary condition before applying divergence
             # Note: need to pass 3D field on faces to `topBC_op`. Interpolating `K` to faces
             #  for this is inefficient - we should find a better solution.
+
             @. ∂ϑres∂ϑ =
-                -dtγ * (
+                -dtγ * ((I,) * 1/τ +
                     divf2c_matrix() ⋅ (
                         MatrixFields.DiagonalMatrixRow(
                             interpc2f_op(-p.soil.K),
@@ -360,7 +381,7 @@ function ClimaLand.make_compute_jacobian(model::EnergyHydrology{FT}) where {FT}
                 ) - (I,)
         else
             @. ∂ϑres∂ϑ =
-                -dtγ * (
+                -dtγ * ((I,) * 1/τ +
                     divf2c_matrix() ⋅
                     MatrixFields.DiagonalMatrixRow(interpc2f_op(-p.soil.K)) ⋅
                     gradc2f_matrix() ⋅ MatrixFields.DiagonalMatrixRow(
@@ -411,6 +432,10 @@ function ClimaLand.make_compute_jacobian(model::EnergyHydrology{FT}) where {FT}
                     ),
                 )
             ) - (I,)
+
+
+        @. ∂θires∂θi =
+            -dtγ * (I,) * 1/τ  - (I,)
     end
     return compute_jacobian!
 end

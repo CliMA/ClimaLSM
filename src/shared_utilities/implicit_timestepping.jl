@@ -113,10 +113,9 @@ function ImplicitEquationJacobian(Y::ClimaCore.Fields.FieldVector)
 
     # Define the implicit and explicit variables of any model we use
     implicit_vars =
-        (@name(soil.ϑ_l), @name(soil.ρe_int), @name(canopy.energy.T))
+        (@name(soil.ϑ_l), @name(soil.ρe_int), @name(soil.θ_i), @name(canopy.energy.T))
     explicit_vars = (
         @name(soilco2.C),
-        @name(soil.θ_i),
         @name(canopy.hydraulics.ϑ_l),
         @name(snow.S),
         @name(snow.U)
