@@ -254,34 +254,103 @@ function turbulent_fluxes(
     p::NamedTuple,
     t,
 )
+
     T_sfc = surface_temperature(model, Y, p, t)
-    ρ_sfc = surface_air_density(atmos, model, Y, p, t, T_sfc)
-    q_sfc = surface_specific_humidity(model, Y, p, T_sfc, ρ_sfc)
     β_sfc = surface_evaporative_scaling(model, Y, p)
     h_sfc = surface_height(model, Y, p)
     r_sfc = surface_resistance(model, Y, p, t)
     d_sfc = displacement_height(model, Y, p)
-    u_air = p.drivers.u
-    h_air = atmos.h
 
-    return turbulent_fluxes_at_a_point.(
+    return new_turbulent_fluxes_at_a_point.(
         T_sfc,
-        q_sfc,
-        ρ_sfc,
         β_sfc,
         h_sfc,
         r_sfc,
         d_sfc,
         p.drivers.thermal_state,
-        u_air,
-        h_air,
+        p.drivers.u,
+        atmos.h,
         atmos.gustiness,
         model.parameters.z_0m,
         model.parameters.z_0b,
         Ref(model.parameters.earth_param_set),
     )
 end
+function new_turbulent_fluxes_at_a_point(
+    T_sfc::FT,
+    q_sfc::FT,
+    ρ_sfc::FT,
+    β_sfc::FT,
+    h_sfc::FT,
+    r_sfc::FT,
+    d_sfc::FT,
+    ts_in,
+    u::FT,
+    h::FT,
+    gustiness::FT,
+    z_0m::FT,
+    z_0b::FT,
+    earth_param_set::EP,
+) where {FT <: AbstractFloat, EP}
+    thermo_params = LP.thermodynamic_parameters(earth_param_set)
+    ts_sfc = Thermodynamics.PhaseEquil_ρTq(thermo_params, ρ_sfc, T_sfc, q_sfc)
 
+    # SurfaceFluxes.jl expects a relative difference between where u = 0
+    # and the atmosphere height. Here, we assume h and h_sfc are measured
+    # relative to a common reference. Then d_sfc + h_sfc + z_0m is the apparent
+    # source of momentum, and
+    # Δh ≈ h - d_sfc - h_sfc is the relative height difference between the
+    # apparent source of momentum and the atmosphere height.
+
+    # In this we have neglected z_0m and z_0b (i.e. assumed they are small
+    # compared to Δh).
+    state_sfc = SurfaceFluxes.StateValues(FT(0), SVector{2, FT}(0, 0), ts_sfc)
+    state_in = SurfaceFluxes.StateValues(
+        h - d_sfc - h_sfc,
+        SVector{2, FT}(u, 0),
+        ts_in,
+    )
+    # The following line wont work on GPU
+    #    h - d_sfc - h_sfc < 0 &&
+    #        @error("Surface height is larger than atmos height in surface fluxes")
+    # State containers
+    states = SurfaceFluxes.ValuesOnly(
+        state_in,
+        state_sfc,
+        z_0m,
+        z_0b,
+        beta = β_sfc,
+        gustiness = gustiness,
+    )
+    surface_flux_params = LP.surface_fluxes_parameters(earth_param_set)
+    scheme = SurfaceFluxes.PointValueScheme()
+    conditions =
+        SurfaceFluxes.surface_conditions(surface_flux_params, states, scheme)
+    _LH_v0::FT = LP.LH_v0(earth_param_set)
+    _ρ_liq::FT = LP.ρ_cloud_liq(earth_param_set)
+
+    # aerodynamic resistance
+    r_ae::FT = 1 / (conditions.Ch * SurfaceFluxes.windspeed(states))
+
+    # latent heat flux
+    E0::FT =
+        SurfaceFluxes.evaporation(surface_flux_params, states, conditions.Ch) # mass flux at potential evaporation rate
+    E = E0 * r_ae / (r_sfc + r_ae) # mass flux accounting for additional surface resistance
+    LH = _LH_v0 * E # Latent heat flux
+
+    # sensible heat flux
+    SH = SurfaceFluxes.sensible_heat_flux(
+        surface_flux_params,
+        conditions.Ch,
+        states,
+        scheme,
+    )
+
+    # vapor flux in volume of liquid water with density 1000kg/m^3
+    Ẽ = E / _ρ_liq
+
+    return (lhf = LH, shf = SH, vapor_flux = Ẽ, r_ae = r_ae)
+end
 """
     turbulent_fluxes_at_a_point(T_sfc::FT,
                                 q_sfc::FT,
