@@ -52,10 +52,10 @@ SW_d = TimeVaryingInput(seconds, SWdown; context)
 LW_d = TimeVaryingInput(seconds, LWdown; context)
 
 start_date = timestamp[mask][1]
-@info start_date
+
 function zenith_angle(
     t,
-    start_date;
+    startt_date;
     latitude = FT(lat),
     longitude = FT(long),
     insol_params::Insolation.Parameters.InsolationParameters{FT} = param_set.insol_params,

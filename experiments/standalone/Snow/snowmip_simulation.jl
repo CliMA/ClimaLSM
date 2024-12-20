@@ -178,7 +178,7 @@ CairoMakie.lines!(ax1, daily, Sl, label = "Model SWE_l")
 CairoMakie.scatter!(
     ax1,
     seconds[snow_data_avail] ./ 24 ./ 3600,
-    FT.(SWE),
+    SWE,
     label = "Data",
     color = :red,
 )
@@ -219,14 +219,14 @@ CairoMakie.lines!(ax1, daily, T, label = "Model")
 CairoMakie.scatter!(
     ax1,
     seconds[snow_data_avail] ./ 24 ./ 3600,
-    FT.(T_snow) .+ 273.15,
+    T_snow .+ 273.15,
     label = "Snow T",
     color = :red,
 )
 CairoMakie.scatter!(
     ax1,
     seconds[snow_data_avail] ./ 24 ./ 3600,
-    FT.(Tair[snow_data_avail]),
+    Tair[snow_data_avail],
     label = "Atmosphere T",
     color = :orange,
 )

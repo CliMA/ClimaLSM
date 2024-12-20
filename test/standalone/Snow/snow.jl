@@ -66,7 +66,6 @@ import ClimaLand.Parameters as LP
         :liquid_water_flux,
         :total_energy_flux,
         :total_water_flux,
-        :applied_liquid_water_flux,
         :applied_energy_flux,
         :applied_water_flux,
         :snow_cover_fraction,

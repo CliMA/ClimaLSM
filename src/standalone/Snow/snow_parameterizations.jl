@@ -327,7 +327,9 @@ end
 """
      snowmelt_flux(flux_avail::FT, T::FT, parameters) where {FT}
 
-
+Computes the energy flux going towards melting snow given the available
+flux and bulk snow temperature T. No melting occurs if the snow is cooling
+or if T<T_freeze.
 """
 function snowmelt_flux(flux_avail::FT, T::FT, parameters) where {FT}
     _LH_f0 = FT(LP.LH_f0(parameters.earth_param_set))

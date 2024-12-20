@@ -133,7 +133,7 @@ function SnowParameters{FT}(
     θ_r = FT(0.08),
     Ksat = FT(1e-3),
     κ_ice = FT(2.21),
-    ΔS = FT(0.2),
+    ΔS = FT(0.1),
     earth_param_set::PSE,
 ) where {FT <: AbstractFloat, DM <: AbstractDensityModel, PSE}
     return SnowParameters{FT, DM, PSE}(
@@ -269,7 +269,6 @@ auxiliary_vars(::SnowModel) = (
     :liquid_water_flux,
     :total_energy_flux,
     :total_water_flux,
-    :applied_liquid_water_flux,
     :applied_energy_flux,
     :applied_water_flux,
     :snow_cover_fraction,
@@ -292,11 +291,9 @@ auxiliary_types(::SnowModel{FT}) where {FT} = (
     FT,
     FT,
     FT,
-    FT,
 )
 
 auxiliary_domain_names(::SnowModel) = (
-    :surface,
     :surface,
     :surface,
     :surface,
@@ -359,13 +356,6 @@ function ClimaLand.make_update_boundary_fluxes(model::SnowModel{FT}) where {FT}
             p.snow.total_water_flux,
             model.parameters.Δt,
         )
-        @. p.snow.applied_liquid_water_flux = p.snow.liquid_water_flux#clip_liquid_water_flux(
-        #   Y.snow.Sl,
-        #    Y.snow.S,
-        #   p.snow.liquid_water_flux,
-        #    p.snow.total_water_flux,
-        #    model.parameters.Δt,
-        #)
         @. p.snow.applied_energy_flux = clip_total_snow_energy_flux(
             Y.snow.U,
             Y.snow.S,
@@ -380,7 +370,7 @@ function ClimaLand.make_compute_exp_tendency(model::SnowModel{FT}) where {FT}
     function compute_exp_tendency!(dY, Y, p, t)
         # positive fluxes are TOWARDS atmos; negative fluxes increase quantity in snow
         @. dY.snow.S = -p.snow.applied_water_flux
-        @. dY.snow.Sl = -p.snow.applied_liquid_water_flux
+        @. dY.snow.Sl = -p.snow.liquid_water_flux
         @. dY.snow.U = -p.snow.applied_energy_flux
         update_density_prog!(model.parameters.density, model, dY, Y, p)
     end
