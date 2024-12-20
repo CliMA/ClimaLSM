@@ -25,12 +25,12 @@ NeuralSnow = Base.get_extension(ClimaLand, :NeuralSnowExt).NeuralSnow;
 
 # Site-specific quantities
 # Error if no site argument is provided
-if length(ARGS) < 1
-    @error("Please provide a site name as command line argument")
-else
-    SITE_NAME = ARGS[1]
-end
-
+#if length(ARGS) < 1
+#    @error("Please provide a site name as command line argument")
+#else
+#    SITE_NAME = ARGS[1]
+#end
+SITE_NAME = "cdp"
 climaland_dir = pkgdir(ClimaLand)
 
 FT = Float32
@@ -56,6 +56,7 @@ depths = z[snow_data_avail]
 
 parameters = SnowParameters{FT}(
     Δt;
+    Ksat = FT(1e-4),
     α_snow = α,
     density = density_model,
     earth_param_set = param_set,
@@ -69,6 +70,7 @@ Y, p, coords = ClimaLand.initialize(model)
 
 # Set initial conditions
 Y.snow.S .= FT(SWE[1]) # first data point
+Y.snow.Sl .= 0 # first data point
 #Y.snow.Z .= FT(depths[1]) #uncomment if using NeuralDepthModel instead of ConstantDensityModel
 Y.snow.U .=
     ClimaLand.Snow.energy_from_q_l_and_swe(FT(SWE[1]), FT(0), parameters) # with q_l = 0

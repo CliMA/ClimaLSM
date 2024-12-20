@@ -333,30 +333,47 @@ function compute_water_runoff(
 ) where {FT}
     τ = runoff_timescale(z, parameters.Ksat, parameters.Δt)
     q_l_max::FT = maximum_liquid_mass_fraction(T, ρ_snow, parameters)
-    return -(q_l - q_l_max) * heaviside(q_l - q_l_max) / τ * S /
-           max(1 - q_l, FT(0.01))
+    return -(q_l - q_l_max) * S / τ * heaviside(q_l - q_l_max)#(q_l - q_l_max) * heaviside(q_l - q_l_max) / τ * S /
+    #max(1 - q_l_max, FT(0.01))
+end
+
+"""
+    compute_energy_runoff(S::FT, q_l::FT, T::FT, parameters) where {FT}
+
+Computes the rate of change in the snow water equivalent S due to loss of
+liquid water (runoff) from the snowpack.
+
+Runoff occurs as the snow melts and exceeds the water holding capacity.
+"""
+function compute_water_runoff(
+    S::FT,
+    q_l::FT,
+    T::FT,
+    ρ_snow::FT,
+    z::FT,
+    parameters,
+) where {FT}
+    τ = runoff_timescale(z, parameters.Ksat, parameters.Δt)
+    q_l_max::FT = maximum_liquid_mass_fraction(T, ρ_snow, parameters)
+    return -(q_l - q_l_max) * S / τ * heaviside(q_l - q_l_max)
 end
 
 
 """
-    energy_from_q_l_and_swe(S::FT, q_l::FT, parameters) where {FT}
+     snowmelt_flux(flux_avail::FT, T::FT, parameters) where {FT}
 
-A helper function for compute the snow energy per unit area, given snow
-water equivalent S, liquid fraction q_l,  and snow model parameters.
 
-Note that liquid water can only exist at the freezing point in this model,
-so temperature is not required as an input.
 """
-function energy_from_q_l_and_swe(S::FT, q_l::FT, parameters) where {FT}
-    _T_freeze = FT(LP.T_freeze(parameters.earth_param_set))
-    _ρ_l = FT(LP.ρ_cloud_liq(parameters.earth_param_set))
-    _T_ref = FT(LP.T_0(parameters.earth_param_set))
+function snowmelt_flux(flux_avail::FT, T::FT, parameters) where {FT}
     _LH_f0 = FT(LP.LH_f0(parameters.earth_param_set))
-
-    c_snow = specific_heat_capacity(q_l, parameters)
-    _ρcD_g = parameters.ρcD_g
-    return _ρ_l * S * (c_snow * (_T_freeze - _T_ref) - (1 - q_l) * _LH_f0) +
-           _ρcD_g * (_T_freeze - _T_ref)
+    _ρ_liq = FT(LP.ρ_cloud_liq(parameters.earth_param_set))
+    _cp_i = FT(LP.cp_i(parameters.earth_param_set))
+    _cp_l = FT(LP.cp_l(parameters.earth_param_set))
+    _T_ref = FT(LP.T_0(parameters.earth_param_set))
+    _T_freeze = FT(LP.T_freeze(parameters.earth_param_set))
+    snowmelt_mass_flux =
+        flux_avail / ((_cp_l - _cp_i) * (p.snow.T - _T_ref) + _LH_f0)
+    return snowmelt_mass_flux * heaviside(T, _T_freeze) * heaviside(-flux_avail)
 end
 
 
@@ -411,7 +428,7 @@ function update_density!(
     Y,
     p,
 )
-    p.snow.ρ_snow .= density.ρ_snow
+    @. p.snow.ρ_snow = density.ρ_snow * (1 - p.snow.q_l) + 1000 * p.snow.q_l
 end
 
 """

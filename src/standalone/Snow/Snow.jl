@@ -192,7 +192,7 @@ water volume per ground area) and
 the energy per unit ground area U [J/m^2] prognostically.
 """
 prognostic_vars(m::SnowModel) =
-    (:S, :U, density_prog_vars(m.parameters.density)...)
+    (:S, :Sl, :U, density_prog_vars(m.parameters.density)...)
 
 """
     density_prog_vars(::AbstractDensityModel)
@@ -210,7 +210,7 @@ both snow water equivalent and energy per unit area
 are scalars.
 """
 prognostic_types(m::SnowModel{FT}) where {FT} =
-    (FT, FT, density_prog_types(m.parameters.density)...)
+    (FT, FT, FT, density_prog_types(m.parameters.density)...)
 
 """
     density_prog_vars(::AbstractDensityModel)
@@ -229,7 +229,7 @@ are modeling only as a function of (x,y), and not as a function
 of depth. Therefore their domain name is ":surface".
 """
 prognostic_domain_names(m::SnowModel) =
-    (:surface, :surface, density_prog_names(m.parameters.density)...)
+    (:surface, :surface, :surface, density_prog_names(m.parameters.density)...)
 
 """
     density_prog_vars(::AbstractDensityModel)
@@ -263,10 +263,13 @@ auxiliary_vars(::SnowModel) = (
     :ρ_snow,
     :turbulent_fluxes,
     :R_n,
+    :snowmelt,
     :energy_runoff,
     :water_runoff,
+    :liquid_water_flux,
     :total_energy_flux,
     :total_water_flux,
+    :applied_liquid_water_flux,
     :applied_energy_flux,
     :applied_water_flux,
     :snow_cover_fraction,
@@ -287,9 +290,15 @@ auxiliary_types(::SnowModel{FT}) where {FT} = (
     FT,
     FT,
     FT,
+    FT,
+    FT,
+    FT,
 )
 
 auxiliary_domain_names(::SnowModel) = (
+    :surface,
+    :surface,
+    :surface,
     :surface,
     :surface,
     :surface,
@@ -317,8 +326,8 @@ function ClimaLand.make_update_aux(model::SnowModel{FT}) where {FT}
 
         @. p.snow.κ = snow_thermal_conductivity(p.snow.ρ_snow, parameters)
 
-        @. p.snow.q_l =
-            snow_liquid_mass_fraction(Y.snow.U, Y.snow.S, parameters)
+        @. p.snow.q_l = min(max(Y.snow.Sl / max(Y.snow.S, eps(FT)), 0), 1)
+        #snow_liquid_mass_fraction(Y.snow.U, Y.snow.S, parameters)
 
         @. p.snow.T =
             snow_bulk_temperature(Y.snow.U, Y.snow.S, p.snow.q_l, parameters)
@@ -346,9 +355,14 @@ function ClimaLand.make_update_boundary_fluxes(model::SnowModel{FT}) where {FT}
         # First compute the boundary fluxes
         snow_boundary_fluxes!(model.boundary_conditions, model, Y, p, t)
         # Next, clip them in case the snow will melt in this timestep
-        @. p.snow.applied_water_flux = clip_total_snow_water_flux(
+        @. p.snow.applied_water_flux = clip_water_flux(
             Y.snow.S,
             p.snow.total_water_flux,
+            model.parameters.Δt,
+        )
+        @. p.snow.applied_liquid_water_flux = clip_water_flux(
+            Y.snow.Sl,
+            p.snow.liquid_water_flux,
             model.parameters.Δt,
         )
         @. p.snow.applied_energy_flux = clip_total_snow_energy_flux(
@@ -365,6 +379,7 @@ function ClimaLand.make_compute_exp_tendency(model::SnowModel{FT}) where {FT}
     function compute_exp_tendency!(dY, Y, p, t)
         # positive fluxes are TOWARDS atmos; negative fluxes increase quantity in snow
         @. dY.snow.S = -p.snow.applied_water_flux
+        @. dY.snow.Sl = -p.snow.applied_liquid_water_flux
         @. dY.snow.U = -p.snow.applied_energy_flux
         update_density_prog!(model.parameters.density, model, dY, Y, p)
     end
@@ -372,16 +387,12 @@ function ClimaLand.make_compute_exp_tendency(model::SnowModel{FT}) where {FT}
 end
 
 """
-    clip_total_snow_water_flux(S, total_water_flux, Δt)
+    clip_water_flux(S, total_water_flux, Δt)
 
 A helper function which clips the total water flux so that
 snow water equivalent S will not become negative in a timestep Δt.
 """
-function clip_total_snow_water_flux(
-    S::FT,
-    total_water_flux::FT,
-    Δt::FT,
-) where {FT}
+function clip_water_flux(S::FT, total_water_flux::FT, Δt::FT) where {FT}
     if S - total_water_flux * Δt < 0
         return S / Δt
     else

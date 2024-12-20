@@ -80,7 +80,7 @@ end
 """
     snow_boundary_fluxes!(
         bc::AtmosDrivenSnowBC,
-        prognostic_land_components::Val{(:snow,)},
+v        prognostic_land_components::Val{(:snow,)},
         model::SnowModel{FT},
         Y,
         p,
@@ -100,25 +100,38 @@ function snow_boundary_fluxes!(
     p,
     t,
 ) where {FT}
+    parameters = model.parameters
+    _LH_f0 = FT(LP.LH_f0(parameters.earth_param_set))
+    _ρ_liq = FT(LP.ρ_cloud_liq(parameters.earth_param_set))
+
     bc = model.boundary_conditions
     p.snow.turbulent_fluxes .= turbulent_fluxes(bc.atmos, model, Y, p, t)
     p.snow.R_n .= net_radiation(bc.radiation, model, Y, p, t)
-    # How does rain affect the below?
+
     P_snow = p.drivers.P_snow
+    P_liq = p.drivers.P_liq
 
     @. p.snow.total_water_flux =
         P_snow +
-        (p.snow.turbulent_fluxes.vapor_flux - p.snow.water_runoff) *
+        (P_liq + p.snow.turbulent_fluxes.vapor_flux - p.snow.water_runoff) *
         p.snow.snow_cover_fraction
+
+
+    @. p.snow.snowmelt =
+        snowmelt_flux(p.snow.lhf + p.snow.shf + p.snow.Rn, p.snow.T, parameters)
+    @. p.snow.liquid_water_flux =
+        (
+            P_liq + p.snow.turbulent_fluxes.vapor_flux * p.snow.q_l -
+            p.snow.water_runoff + p.snow.snowmelt
+        ) * p.snow.snow_cover_fraction
 
     # I think we want dU/dt to include energy of falling snow.
     # otherwise snow can fall but energy wont change
     # We are assuming that the sensible heat portion of snow is negligible.
-    _LH_f0 = FT(LP.LH_f0(model.parameters.earth_param_set))
-    _ρ_liq = FT(LP.ρ_cloud_liq(model.parameters.earth_param_set))
     ρe_falling_snow = -_LH_f0 * _ρ_liq # per unit vol of liquid water
 
     # positive fluxes are TOWARDS atmos
+    # This does not include the energy in rain yet
     @. p.snow.total_energy_flux =
         P_snow * ρe_falling_snow +
         (
