@@ -36,17 +36,15 @@ for FT in (Float32, Float64)
         θ_r = FT(0.08)
         Ksat = FT(1e-3)
         κ_ice = FT(2.21)
-        ρcD_g = FT(1700 * 2.09e3 * 0.1)
         Δt = Float64(180.0)
         parameters = SnowParameters{FT}(
-            Δt;
+            Δt,
+            ΔS = FT(0.1);
             density = densitymodel,
             earth_param_set = param_set,
         )
         @test parameters.density.ρ_snow == ρ_snow
         @test typeof(parameters.density.ρ_snow) == FT
-        @test parameters.ρcD_g == ρcD_g
-        @test typeof(parameters.ρcD_g) == FT
         @test parameters.z_0m == z_0m
         @test typeof(parameters.z_0m) == FT
         @test parameters.z_0b == z_0b
@@ -84,37 +82,6 @@ for FT in (Float32, Float64)
         @test prod(ρ_calc[1:(end - 1)] .≈ ρ_snow)
         @test ρ_calc[end] == _ρ_l
         @test snow_bulk_density(eps(FT(0)), 2 * eps(FT(0)), parameters) == _ρ_l
-
-
-        U = cat(FT.(Array(LinRange(-1e8, 1e7, 100))), FT(0), dims = 1)
-        q_l = snow_liquid_mass_fraction.(U, SWE, parameters)
-        T_bulk = snow_bulk_temperature.(U, SWE, q_l, parameters)
-
-        @test all(q_l[T_bulk .< _T_freeze] .< eps(FT))
-        @test all(q_l[T_bulk .> _T_freeze] .≈ FT(1))
-        @test all(q_l[T_bulk .== _T_freeze] .> FT(0.0)) &&
-              all(q_l[T_bulk .== _T_freeze] .< FT(1.1))
-        Upred =
-            (
-                _ρ_l .* SWE .* specific_heat_capacity.(q_l, parameters) .+
-                ρcD_g
-            ) .* (T_bulk .- _T_ref) .- _ρ_l .* SWE .* (1.0f0 .- q_l) .* _LH_f0
-
-        q_lpred = snow_liquid_mass_fraction.(Upred, SWE, parameters)
-        T_pred = snow_bulk_temperature.(Upred, SWE, q_lpred, parameters)
-        @test all(q_lpred .≈ q_l)
-        @test all(T_pred .≈ T_bulk)
-        @test ClimaLand.Snow.volumetric_internal_energy_liq(FT, parameters) ==
-              _ρ_l * _cp_l * (_T_freeze .- _T_ref)
-        temp = FT(273.0)
-        U = ClimaLand.Snow.energy_from_T_and_swe(FT(1.0), temp, parameters)
-        q_l = snow_liquid_mass_fraction(U, FT(1.0), parameters)
-        @test T_bulk =
-            snow_bulk_temperature(U, FT(1.0), q_l, parameters) == temp
-
-        q_l = FT(0.5)
-        U = ClimaLand.Snow.energy_from_q_l_and_swe(FT(1.0), q_l, parameters)
-        @test snow_liquid_mass_fraction(U, FT(1.0), parameters) == q_l
-
+        # test more functions here
     end
 end

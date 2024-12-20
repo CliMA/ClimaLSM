@@ -487,11 +487,10 @@ function soil_boundary_fluxes!(
     # Use top_bc.water as temporary storage to avoid allocation
     influx = p.soil.top_bc.water
     @. influx =
-        p.drivers.P_liq +
         p.snow.water_runoff * p.snow.snow_cover_fraction +
         p.excess_water_flux +
         (1 - p.snow.snow_cover_fraction) *
-        p.soil.turbulent_fluxes.vapor_flux_liq
+        (p.drivers.P_liq + p.soil.turbulent_fluxes.vapor_flux_liq)
     # The update_runoff! function computes how much actually infiltrates
     # given influx and our runoff model bc.runoff, and updates
     # p.soil.infiltration in place
@@ -516,13 +515,25 @@ function snow_boundary_fluxes!(
     t,
 ) where {FT}
     p.snow.turbulent_fluxes .= turbulent_fluxes(bc.atmos, model, Y, p, t)
-    # How does rain affect the below?
     P_snow = p.drivers.P_snow
+    P_liq = p.drivers.P_liq
 
     @. p.snow.total_water_flux =
         P_snow +
-        (p.snow.turbulent_fluxes.vapor_flux - p.snow.water_runoff) *
+        (P_liq + p.snow.turbulent_fluxes.vapor_flux - p.snow.water_runoff) *
         p.snow.snow_cover_fraction
+
+
+    @. p.snow.snowmelt = ClimaLand.Snow.snowmelt_flux(
+        p.snow.turbulent_fluxes.lhf + p.snow.turbulent_fluxes.shf + p.snow.R_n - p.ground_heat_flux,
+        p.snow.T,
+        model.parameters,
+    )
+    @. p.snow.liquid_water_flux =
+        (
+            P_liq + p.snow.turbulent_fluxes.vapor_flux * p.snow.q_l -
+            p.snow.water_runoff + p.snow.snowmelt
+        ) * p.snow.snow_cover_fraction
 
     # I think we want dU/dt to include energy of falling snow.
     # otherwise snow can fall but energy wont change

@@ -134,6 +134,7 @@ Y.soil.ρe_int =
     volumetric_internal_energy.(Y.soil.θ_i, ρc_s, T_0, earth_param_set)
 
 Y.snow.S .= 0.0
+Y.snow.Sl .= 0.0
 Y.snow.U .= 0.0
 set_initial_cache!(p, Y, t0)
 

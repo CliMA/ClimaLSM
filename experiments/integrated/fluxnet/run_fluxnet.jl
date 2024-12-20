@@ -29,11 +29,11 @@ include(joinpath(climaland_dir, "experiments/integrated/fluxnet/data_tools.jl"))
 include(joinpath(climaland_dir, "experiments/integrated/fluxnet/plot_utils.jl"))
 
 # Read in the site to be run from the command line
-if length(ARGS) < 1
-    error("Must provide site ID on command line")
-end
+#if length(ARGS) < 1
+#    error("Must provide site ID on command line")
+#end
 
-site_ID = ARGS[1]
+site_ID = "US-MOz"#ARGS[1]
 
 # Read all site-specific domain parameters from the simulation file for the site
 include(
@@ -249,6 +249,7 @@ end
 Y.canopy.energy.T = drivers.TA.values[1 + Int(round(t0 / DATA_DT))] # Get atmos temperature at t0
 
 Y.snow.S .= 0.0
+Y.snow.Sl .= 0.0
 Y.snow.U .= 0.0
 
 set_initial_cache! = make_set_initial_cache(land)
@@ -285,10 +286,16 @@ diag_cb = ClimaDiagnostics.DiagnosticsCallback(diagnostic_handler);
 ## How often we want to update the drivers. Note that this uses the defined `t0` and `tf`
 ## defined in the simulatons file
 updateat = Array(t0:DATA_DT:tf)
+saveat = Array(t0:3600:tf)
 model_drivers = ClimaLand.get_drivers(land)
 updatefunc = ClimaLand.make_update_drivers(model_drivers)
 driver_cb = ClimaLand.DriverUpdateCallback(updateat, updatefunc)
-cb = SciMLBase.CallbackSet(driver_cb, diag_cb)
+sv = (;
+    t = Array{FT}(undef, length(saveat)),
+    saveval = Array{NamedTuple}(undef, length(saveat)),
+);
+saving_cb = ClimaLand.NonInterpSavingCallback(sv, saveat);
+cb = SciMLBase.CallbackSet(driver_cb, diag_cb, saving_cb)
 
 
 prob = SciMLBase.ODEProblem(
@@ -302,7 +309,7 @@ prob = SciMLBase.ODEProblem(
     p,
 );
 
-sol = SciMLBase.solve(prob, ode_algo; dt = dt, callback = cb);
+sol = SciMLBase.solve(prob, ode_algo; dt = dt, callback = cb, saveat = saveat);
 
 # Extract model output from the saved diagnostics
 short_names_1D = [

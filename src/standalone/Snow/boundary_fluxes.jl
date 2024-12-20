@@ -117,8 +117,11 @@ function snow_boundary_fluxes!(
         p.snow.snow_cover_fraction
 
 
-    @. p.snow.snowmelt =
-        snowmelt_flux(p.snow.lhf + p.snow.shf + p.snow.Rn, p.snow.T, parameters)
+    @. p.snow.snowmelt = snowmelt_flux(
+        p.snow.turbulent_fluxes.lhf + p.snow.turbulent_fluxes.shf + p.snow.R_n,
+        p.snow.T,
+        parameters,
+    )
     @. p.snow.liquid_water_flux =
         (
             P_liq + p.snow.turbulent_fluxes.vapor_flux * p.snow.q_l -

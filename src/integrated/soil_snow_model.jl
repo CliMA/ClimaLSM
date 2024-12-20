@@ -248,54 +248,16 @@ function update_soil_snow_ground_heat_flux!(
     soil_domain,
     FT,
 )
-    # Thermal conductivities
-    κ_snow = p.snow.κ
-    κ_soil = ClimaLand.Domains.top_center_to_surface(p.soil.κ)
-
-    # Depth of snow and soil layers interacting thermally at interface
+    # Snow
     # Note that the `snow_depth` call below allocates a field. Return to this in the future.
     Δz_snow = Snow.snow_depth(snow_params.density, Y, p, snow_params) # Snow depth
-    Δz_soil = p.effective_soil_sfc_depth
-    (; ρc_ds, earth_param_set) = soil_params
-
-    # The snow assumes a thickness D of soil interacts thermally with the snow
-    # but this is specified by a parameter ρcD_g (volumetric heat capacity x depth).
-    # Therefore we infer the depth as D = ρcD_g / ρc_g, where ρc_g is volumetric
-    # heat capacity of the first soil layer
-    @. p.subsfc_scratch =
-        snow_params.ρcD_g /
-        volumetric_heat_capacity(p.soil.θ_l, Y.soil.θ_i, ρc_ds, earth_param_set)
-    Δz_soil .= ClimaLand.Domains.top_center_to_surface(p.subsfc_scratch)
-    # If the soil layers are very large, no layer center may lie within Δz_soil of the snow.
-    # In this case, we take the maximum of the first center layer and the thickness of the layer
-    # interacting with the snow, plus a small amount
-    @. Δz_soil = max(Δz_soil, soil_domain.fields.Δz_top) + sqrt(eps(FT))
-
-    # Find average temperature of soil in depth D
-    ∫H_dz = p.sfc_scratch
-    ∫H_T_dz = p.soil.sfc_scratch
-
-    H = p.subsfc_scratch
-    @. H = ClimaLand.heaviside(
-        Δz_soil,
-        soil_domain.fields.z_sfc - soil_domain.fields.z,
-    )
-    column_integral_definite!(∫H_dz, H)
-
-    H_T = p.subsfc_scratch
-    @. H_T =
-        ClimaLand.heaviside(
-            Δz_soil,
-            soil_domain.fields.z_sfc - soil_domain.fields.z,
-        ) * p.soil.T
-    column_integral_definite!(∫H_T_dz, H_T)
-
-    T_soil = p.effective_soil_sfc_T
-
-    @. T_soil = ∫H_T_dz / ∫H_dz
-
-    # Snow temperature
     T_snow = p.snow.T
+    κ_snow = p.snow.κ
+
+    # Soil
+    Δz_soil = soil_domain.fields.Δz_top
+    T_soil = ClimaLand.Domains.top_center_to_surface(p.soil.T)
+    κ_soil = ClimaLand.Domains.top_center_to_surface(p.soil.κ)
 
     # compute the flux
     @. p.ground_heat_flux =
@@ -337,13 +299,25 @@ function snow_boundary_fluxes!(
 ) where {FT}
     p.snow.turbulent_fluxes .= turbulent_fluxes(bc.atmos, model, Y, p, t)
     p.snow.R_n .= net_radiation(bc.radiation, model, Y, p, t)
-    # How does rain affect the below?
     P_snow = p.drivers.P_snow
+    P_liq = p.drivers.P_liq
 
     @. p.snow.total_water_flux =
         P_snow +
-        (p.snow.turbulent_fluxes.vapor_flux - p.snow.water_runoff) *
+        (P_liq + p.snow.turbulent_fluxes.vapor_flux - p.snow.water_runoff) *
         p.snow.snow_cover_fraction
+
+
+    @. p.snow.snowmelt = ClimaLand.Snow.snowmelt_flux(
+        p.snow.turbulent_fluxes.lhf + p.snow.turbulent_fluxes.shf + p.snow.R_n - p.ground_heat_flux,
+        p.snow.T,
+        model.parameters,
+    )
+    @. p.snow.liquid_water_flux =
+        (
+            P_liq + p.snow.turbulent_fluxes.vapor_flux * p.snow.q_l -
+            p.snow.water_runoff + p.snow.snowmelt
+        ) * p.snow.snow_cover_fraction
 
     # I think we want dU/dt to include energy of falling snow.
     # otherwise snow can fall but energy wont change
@@ -394,11 +368,10 @@ function soil_boundary_fluxes!(
     # Use top_bc.water as temporary storage to avoid allocation
     influx = p.soil.top_bc.water
     @. influx =
-        p.drivers.P_liq +
         p.snow.water_runoff * p.snow.snow_cover_fraction +
         p.excess_water_flux +
         (1 - p.snow.snow_cover_fraction) *
-        p.soil.turbulent_fluxes.vapor_flux_liq
+        (p.soil.turbulent_fluxes.vapor_flux_liq + p.drivers.P_liq)
     # The update_runoff! function computes how much actually infiltrates
     # given influx and our runoff model bc.runoff, and updates
     # p.soil.infiltration in place

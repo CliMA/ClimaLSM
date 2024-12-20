@@ -135,6 +135,7 @@ function init_soil!(Y, z, params)
 end
 function init_snow!(Y, S)
     Y.snow.S .= S
+    Y.snow.Sl .= 0
     @. Y.snow.U =
         ClimaLand.Snow.energy_from_q_l_and_swe(Y.snow.S, 1.0f0, snow_params)
 end
@@ -172,7 +173,7 @@ set_initial_cache!(p, Y, t)
 # affect
 @test all(
     parent(p.soil.top_bc.water) .≈
-    parent(p.excess_water_flux .+ p.drivers.P_liq .+ p.snow.water_runoff),
+    parent(p.excess_water_flux .+ p.snow.water_runoff),
 )
 @test all(
     parent(p.soil.top_bc.heat) .≈ parent(
