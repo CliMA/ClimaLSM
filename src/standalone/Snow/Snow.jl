@@ -101,8 +101,8 @@ Base.@kwdef struct SnowParameters{
     κ_ice::FT
     "Timestep of the model (s)"
     Δt::FT
-    "Parameter to prevent dividing by zero when computing snow temperature (m)"
-    ΔS::FT
+    "Areal specific heat of ground interacting with snow (J/m^2/K)"
+    ρcD_g::FT
     "Clima-wide parameters"
     earth_param_set::PSE
 end
@@ -117,7 +117,7 @@ end
                       θ_r = FT(0.08),
                       Ksat = FT(1e-3),
                       κ_ice = FT(2.21),
-                      ΔS = FT(0.1),
+                      ρcD_g = FT(3.553e5),
                       earth_param_set::PSE) where {FT, PSE}
 
 An outer constructor for `SnowParameters` which supplies defaults for
@@ -133,7 +133,7 @@ function SnowParameters{FT}(
     θ_r = FT(0.08),
     Ksat = FT(1e-3),
     κ_ice = FT(2.21),
-    ΔS = FT(0.1),
+    ρcD_g = FT(3.553e5),
     earth_param_set::PSE,
 ) where {FT <: AbstractFloat, DM <: AbstractDensityModel, PSE}
     return SnowParameters{FT, DM, PSE}(
@@ -146,7 +146,7 @@ function SnowParameters{FT}(
         Ksat,
         κ_ice,
         Δt,
-        ΔS,
+        ρcD_g,
         earth_param_set,
     )
 end
@@ -269,6 +269,7 @@ auxiliary_vars(::SnowModel) = (
     :liquid_water_flux,
     :total_energy_flux,
     :total_water_flux,
+    :applied_liquid_water_flux,
     :applied_energy_flux,
     :applied_water_flux,
     :snow_cover_fraction,
@@ -291,9 +292,11 @@ auxiliary_types(::SnowModel{FT}) where {FT} = (
     FT,
     FT,
     FT,
+    FT,
 )
 
 auxiliary_domain_names(::SnowModel) = (
+    :surface,
     :surface,
     :surface,
     :surface,
@@ -356,6 +359,13 @@ function ClimaLand.make_update_boundary_fluxes(model::SnowModel{FT}) where {FT}
             p.snow.total_water_flux,
             model.parameters.Δt,
         )
+        @. p.snow.applied_liquid_water_flux = clip_water_flux(
+            Y.snow.Sl,
+            p.snow.liquid_water_flux,
+            Y.snow.S,
+            p.snow.applied_water_flux,
+            model.parameters.Δt,
+        )
         @. p.snow.applied_energy_flux = clip_total_snow_energy_flux(
             Y.snow.U,
             Y.snow.S,
@@ -370,7 +380,7 @@ function ClimaLand.make_compute_exp_tendency(model::SnowModel{FT}) where {FT}
     function compute_exp_tendency!(dY, Y, p, t)
         # positive fluxes are TOWARDS atmos; negative fluxes increase quantity in snow
         @. dY.snow.S = -p.snow.applied_water_flux
-        @. dY.snow.Sl = -p.snow.liquid_water_flux
+        @. dY.snow.Sl = -p.snow.applied_liquid_water_flux
         @. dY.snow.U = -p.snow.applied_energy_flux
         update_density_prog!(model.parameters.density, model, dY, Y, p)
     end
@@ -388,6 +398,31 @@ function clip_water_flux(S::FT, total_water_flux::FT, Δt::FT) where {FT}
         return S / Δt
     else
         return total_water_flux
+    end
+end
+
+"""
+    clip_water_flux(Sl::FT, liquid_water_flux::FT,S::FT, applied_water_flux::FT, Δt::FT) where {FT}
+
+A helper function which clips the liquid water flux so that
+snow liquid water Sl will not become negative or smaller than S 
+in a timestep Δt.
+"""
+function clip_water_flux(
+    Sl::FT,
+    liquid_water_flux::FT,
+    S::FT,
+    applied_water_flux::FT,
+    Δt::FT,
+) where {FT}
+    # If liquid water flux is large enough to make Sl negative, cap it
+    if Sl - liquid_water_flux * Δt < 0
+        return Sl / Δt
+        # If S disappears in this step, Sl should also
+    elseif S - applied_water_flux * Δt < eps(FT)
+        return Sl / Δt
+    else
+        return liquid_water_flux
     end
 end
 

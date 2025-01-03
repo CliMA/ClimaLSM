@@ -55,7 +55,7 @@ start_date = timestamp[mask][1]
 
 function zenith_angle(
     t,
-    startt_date;
+    start_date;
     latitude = FT(lat),
     longitude = FT(long),
     insol_params::Insolation.Parameters.InsolationParameters{FT} = param_set.insol_params,

@@ -36,15 +36,17 @@ for FT in (Float32, Float64)
         θ_r = FT(0.08)
         Ksat = FT(1e-3)
         κ_ice = FT(2.21)
+        ρcD_g = FT(1700 * 2.09e3 * 0.1)
         Δt = Float64(180.0)
         parameters = SnowParameters{FT}(
             Δt,
-            ΔS = FT(0.1);
             density = densitymodel,
             earth_param_set = param_set,
         )
         @test parameters.density.ρ_snow == ρ_snow
         @test typeof(parameters.density.ρ_snow) == FT
+        @test parameters.ρcD_g == ρcD_g
+        @test typeof(parameters.ρcD_g) == FT
         @test parameters.z_0m == z_0m
         @test typeof(parameters.z_0m) == FT
         @test parameters.z_0b == z_0b
@@ -61,27 +63,25 @@ for FT in (Float32, Float64)
         @test typeof(parameters.κ_ice) == FT
 
 
-
         T = FT.([275.0, 272, _T_freeze])
         @test snow_surface_temperature.(T) ≈ T
-        @test all(
-            maximum_liquid_mass_fraction.(T, ρ_snow, Ref(parameters)) .==
-            [FT(0), θ_r * _ρ_l / ρ_snow, θ_r * _ρ_l / ρ_snow],
-        )
-
-        SWE = cat(FT.(rand(100) .+ 0.2), FT(0), dims = 1)
-        z = SWE * _ρ_l ./ ρ_snow
         @test specific_heat_capacity(FT(1.0), parameters) == _cp_l
         @test specific_heat_capacity(FT(0.0), parameters) == _cp_i
         @test snow_thermal_conductivity(ρ_snow, parameters) ==
               κ_air +
               (FT(0.07) * (ρ_snow / _ρ_i) + FT(0.93) * (ρ_snow / _ρ_i)^2) *
               (κ_ice - κ_air)
+        @test all(
+            maximum_liquid_mass_fraction.(T, ρ_snow, Ref(parameters)) .==
+            [FT(0), θ_r * _ρ_l / ρ_snow, θ_r * _ρ_l / ρ_snow],
+        )
+
+        SWE = cat(FT.(rand(10)), FT(0), dims = 1)
+        z = SWE * _ρ_l ./ ρ_snow
         @test runoff_timescale.(z, Ksat, FT(Δt)) ≈ max.(Δt, z ./ Ksat)
         ρ_calc = snow_bulk_density.(SWE, z, parameters)
-        @test prod(ρ_calc[1:(end - 1)] .≈ ρ_snow)
+        @test all(ρ_calc[1:(end - 1)] .≈ ρ_snow)
         @test ρ_calc[end] == _ρ_l
         @test snow_bulk_density(eps(FT(0)), 2 * eps(FT(0)), parameters) == _ρ_l
-        # test more functions here
     end
 end
