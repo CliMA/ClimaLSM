@@ -6,6 +6,7 @@ export snow_surface_temperature,
     maximum_liquid_mass_fraction,
     runoff_timescale,
     compute_water_runoff,
+    energy_from_q_l_and_swe,
     energy_from_T_and_swe,
     snow_cover_fraction,
     snow_bulk_density
@@ -305,8 +306,8 @@ end
 """
      phase_change_flux(flux_avail::FT, T::FT, parameters) where {FT}
 
-Computes the energy flux going towards melting/freezing snow given the 
-available flux and bulk snow temperature T. 
+Computes the volume flux going towards melting/freezing snow given the 
+available energy flux and bulk snow temperature T. 
 - Melting occurs if the snow is warming(flux_avail < 0) AND T>T_freeze. 
 - Freezing occurs if the snow is cooling(flux_avail > 0) AND T<T_freeze.
 """
@@ -317,16 +318,35 @@ function snowmelt_flux(flux_avail::FT, T::FT, parameters) where {FT}
     _cp_l = FT(LP.cp_l(parameters.earth_param_set))
     _T_ref = FT(LP.T_0(parameters.earth_param_set))
     _T_freeze = FT(LP.T_freeze(parameters.earth_param_set))
-    phase_change_mass_flux =
+    phase_change_vol_flux =
         flux_avail / _ρ_liq / ((_cp_l - _cp_i) * (T - _T_ref) + _LH_f0)
-    return phase_change_mass_flux *
+    return phase_change_vol_flux * (
            heaviside(T, _T_freeze) *
            heaviside(-flux_avail) +
-           phase_change_mass_flux *
+          + 
            heaviside(_T_freeze, T) *
-           heaviside(flux_avail)
+           heaviside(flux_avail))
 end
 
+"""
+    energy_from_q_l_and_swe(S::FT, q_l::FT, parameters) where {FT}
+
+A helper function for compute the snow energy per unit area, given snow
+water equivalent S, liquid fraction q_l,  and snow model parameters.
+
+This assumes that the snow is at the freezing point.
+"""
+function energy_from_q_l_and_swe(S::FT, q_l::FT, parameters) where {FT}
+    _T_freeze = FT(LP.T_freeze(parameters.earth_param_set))
+    _ρ_l = FT(LP.ρ_cloud_liq(parameters.earth_param_set))
+    _T_ref = FT(LP.T_0(parameters.earth_param_set))
+    _LH_f0 = FT(LP.LH_f0(parameters.earth_param_set))
+
+    c_snow = specific_heat_capacity(q_l, parameters)
+    _ρcD_g = parameters.ρcD_g
+    return _ρ_l * S * (c_snow * (_T_freeze - _T_ref) - (1 - q_l) * _LH_f0) +
+           _ρcD_g * (_T_freeze - _T_ref)
+end
 
 """
     energy_from_T_and_swe(S::FT, T::FT, parameters) where {FT}
