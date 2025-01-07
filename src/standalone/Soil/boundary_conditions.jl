@@ -825,7 +825,7 @@ function soil_boundary_fluxes!(
 )
     p.soil.turbulent_fluxes .= turbulent_fluxes(bc.atmos, model, Y, p, t)
     p.soil.R_n .= net_radiation(bc.radiation, model, Y, p, t)
-    # influx = maximum possible rate of infiltration given precip, snowmelt, evaporation/condensation
+    # influx = maximum possible rate of infiltration given precip, phase_change_flux, evaporation/condensation
     # but if this exceeds infiltration capacity of the soil, runoff will
     # be generated.
     # Use top_bc.water as temporary storage to avoid allocation

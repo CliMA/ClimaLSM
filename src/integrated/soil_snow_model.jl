@@ -346,7 +346,7 @@ function snow_boundary_fluxes!(
         p.snow.snow_cover_fraction
 
 
-    @. p.snow.snowmelt = ClimaLand.Snow.snowmelt_flux(
+    @. p.snow.phase_change_flux = ClimaLand.Snow.phase_change_flux(
         p.snow.turbulent_fluxes.lhf + p.snow.turbulent_fluxes.shf + p.snow.R_n - p.ground_heat_flux,
         p.snow.T,
         model.parameters,
@@ -354,7 +354,7 @@ function snow_boundary_fluxes!(
     @. p.snow.liquid_water_flux =
         (
             P_liq + p.snow.turbulent_fluxes.vapor_flux * p.snow.q_l -
-            p.snow.water_runoff + p.snow.snowmelt
+            p.snow.water_runoff + p.snow.phase_change_flux
         ) * p.snow.snow_cover_fraction
 
     # I think we want dU/dt to include energy of falling snow.
@@ -400,7 +400,7 @@ function soil_boundary_fluxes!(
     bc = soil.boundary_conditions.top
     p.soil.turbulent_fluxes .= turbulent_fluxes(bc.atmos, soil, Y, p, t)
     p.soil.R_n .= net_radiation(bc.radiation, soil, Y, p, t)
-    # influx = maximum possible rate of infiltration given precip, snowmelt, evaporation/condensation
+    # influx = maximum possible rate of infiltration given precip, phase_change_flux, evaporation/condensation
     # but if this exceeds infiltration capacity of the soil, runoff will
     # be generated.
     # Use top_bc.water as temporary storage to avoid allocation

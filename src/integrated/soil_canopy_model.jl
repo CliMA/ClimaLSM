@@ -370,7 +370,7 @@ function soil_boundary_fluxes!(
 ) where {FT}
     bc = soil.boundary_conditions.top
     p.soil.turbulent_fluxes .= turbulent_fluxes(bc.atmos, soil, Y, p, t)
-    # influx = maximum possible rate of infiltration given precip, snowmelt, evaporation/condensation
+    # influx = maximum possible rate of infiltration given precip, phase_change_flux, evaporation/condensation
     # but if this exceeds infiltration capacity of the soil, runoff will
     # be generated.
     # Use top_bc.water as temporary storage to avoid allocation

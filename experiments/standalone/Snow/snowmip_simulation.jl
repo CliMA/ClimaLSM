@@ -55,7 +55,6 @@ density_model = Snow.ConstantDensityModel(ρ)
 
 parameters = SnowParameters{FT}(
     Δt;
-    Ksat = FT(1e-4),
     α_snow = α,
     density = density_model,
     earth_param_set = param_set,
@@ -128,6 +127,8 @@ evaporation = [
 R_n = [parent(sv.saveval[k].snow.R_n)[1] for k in 1:length(sol.t)];
 water_runoff =
     [parent(sv.saveval[k].snow.water_runoff)[1] for k in 1:length(sol.t)];
+phase_change_flux =
+    [parent(sv.saveval[k].snow.phase_change_flux)[1] for k in 1:length(sol.t)];
 rain = [parent(sv.saveval[k].drivers.P_liq)[1] for k in 1:length(sv.t)];
 snow = [parent(sv.saveval[k].drivers.P_snow)[1] for k in 1:length(sv.t)];
 scf =
@@ -291,6 +292,13 @@ CairoMakie.lines!(
     label = "Runoff",
     color = :blue,
 )
+CairoMakie.lines!(
+    ax1,
+    daily,
+    cumsum(phase_change_flux .* scf) .* Δt,
+    label = "Phase Change",
+    color = :orange,
+)
 CairoMakie.axislegend(ax1, position = :lb)
 
 CairoMakie.save(joinpath(savedir, "water_fluxes_$(SITE_NAME).png"), fig)
@@ -394,6 +402,14 @@ ax3 = CairoMakie.Axis(
     xlabel = "Days since $(s[1:10])",
 )
 CairoMakie.lines!(ax3, daily, T, label = "Model")
+CairoMakie.lines!(
+    ax3,
+    daily,
+    zeros(length(daily)) .+ 273.15,
+    label = "Freezing Temperature",
+    color = :purple,
+    linestyle = :dot,
+)
 CairoMakie.scatter!(
     ax3,
     seconds[snow_data_avail] ./ 24 ./ 3600,
@@ -401,5 +417,6 @@ CairoMakie.scatter!(
     label = "Data",
     color = :red,
 )
+xlims!(ax3, 0, ndays)
 CairoMakie.axislegend(ax3, position = :rt)
 CairoMakie.save(joinpath(savedir, "data_comparison_$(SITE_NAME).png"), fig)

@@ -263,7 +263,7 @@ auxiliary_vars(::SnowModel) = (
     :ρ_snow,
     :turbulent_fluxes,
     :R_n,
-    :snowmelt,
+    :phase_change_flux,
     :energy_runoff,
     :water_runoff,
     :liquid_water_flux,
@@ -322,21 +322,22 @@ function ClimaLand.make_update_aux(model::SnowModel{FT}) where {FT}
     function update_aux!(p, Y, t)
         parameters = model.parameters
 
-        @. p.snow.q_l = min(max(Y.snow.Sl / max(Y.snow.S, eps(FT)), 0), 1)
+        @. p.snow.q_l =
+            min(max(Y.snow.Sl, eps(FT)) / max(Y.snow.S, eps(FT)), FT(1))
 
         update_density!(parameters.density, parameters, Y, p)
 
         @. p.snow.κ = snow_thermal_conductivity(p.snow.ρ_snow, parameters)
 
         @. p.snow.T =
-            snow_bulk_temperature(Y.snow.U, Y.snow.S, p.snow.q_l, parameters)
+            snow_bulk_temperature(Y.snow.U, Y.snow.S, Y.snow.Sl, parameters)
 
         @. p.snow.T_sfc = snow_surface_temperature(p.snow.T)
 
         p.snow.water_runoff .=
             compute_water_runoff.(
                 Y.snow.S,
-                p.snow.q_l,
+                Y.snow.Sl,
                 p.snow.T,
                 p.snow.ρ_snow,
                 snow_depth(model.parameters.density, Y, p, parameters), # Note that the `snow_depth` call below allocates a field. Return to this in the future.
@@ -344,7 +345,8 @@ function ClimaLand.make_update_aux(model::SnowModel{FT}) where {FT}
             )
 
         @. p.snow.energy_runoff =
-            p.snow.water_runoff * volumetric_internal_energy_liq(FT, parameters)
+            p.snow.water_runoff *
+            volumetric_internal_energy_liq(p.snow.T, parameters)
         @. p.snow.snow_cover_fraction = snow_cover_fraction(Y.snow.S)
     end
 end
@@ -359,13 +361,7 @@ function ClimaLand.make_update_boundary_fluxes(model::SnowModel{FT}) where {FT}
             p.snow.total_water_flux,
             model.parameters.Δt,
         )
-        @. p.snow.applied_liquid_water_flux = clip_water_flux(
-            Y.snow.Sl,
-            p.snow.liquid_water_flux,
-            Y.snow.S,
-            p.snow.applied_water_flux,
-            model.parameters.Δt,
-        )
+
         @. p.snow.applied_energy_flux = clip_total_snow_energy_flux(
             Y.snow.U,
             Y.snow.S,
@@ -373,6 +369,33 @@ function ClimaLand.make_update_boundary_fluxes(model::SnowModel{FT}) where {FT}
             p.snow.total_water_flux,
             model.parameters.Δt,
         )
+        # We now estimate the phase change flux: if the applied energy flux is such that T > T_f on the next step, use the residual after warming to T_f to melt snow
+        # This estimate uses the current SWE and Sl.
+        z = snow_depth(model.parameters.density, Y, p, model.parameters)
+        τ = @. max(
+            z *
+            z *
+            p.snow.ρ_snow *
+            specific_heat_capacity(p.snow.q_l, model.parameters) / p.snow.κ,
+            3 * model.parameters.Δt,
+        )
+        @. p.snow.phase_change_flux = phase_change_flux_alt(
+            p.snow.T,
+            Y.snow.S,
+            Y.snow.Sl,
+            τ,
+            model.parameters,
+        )
+        #    @. p.snow.phase_change_flux =  phase_change_flux(Y.snow.U,
+        #                                                     Y.snow.S,
+        #                                                     Y.snow.Sl,
+        #                                                     p.snow.T,
+        #                                                     τ,
+        #                                                     p.snow.applied_energy_flux,
+        #                                                     model.parameters)
+        @. p.snow.liquid_water_flux +=
+            p.snow.phase_change_flux * p.snow.snow_cover_fraction
+        @. p.snow.applied_liquid_water_flux = p.snow.liquid_water_flux
     end
 end
 
@@ -398,31 +421,6 @@ function clip_water_flux(S::FT, total_water_flux::FT, Δt::FT) where {FT}
         return S / Δt
     else
         return total_water_flux
-    end
-end
-
-"""
-    clip_water_flux(Sl::FT, liquid_water_flux::FT,S::FT, applied_water_flux::FT, Δt::FT) where {FT}
-
-A helper function which clips the liquid water flux so that
-snow liquid water Sl will not become negative or smaller than S 
-in a timestep Δt.
-"""
-function clip_water_flux(
-    Sl::FT,
-    liquid_water_flux::FT,
-    S::FT,
-    applied_water_flux::FT,
-    Δt::FT,
-) where {FT}
-    # If liquid water flux is large enough to make Sl negative, cap it
-    if Sl - liquid_water_flux * Δt < 0
-        return Sl / Δt
-        # If S disappears in this step, Sl should also
-    elseif S - applied_water_flux * Δt < eps(FT)
-        return Sl / Δt
-    else
-        return liquid_water_flux
     end
 end
 

@@ -60,7 +60,7 @@ import ClimaLand.Parameters as LP
         :ρ_snow,
         :turbulent_fluxes,
         :R_n,
-        :snowmelt,
+        :phase_change_flux,
         :energy_runoff,
         :water_runoff,
         :liquid_water_flux,
@@ -131,11 +131,11 @@ import ClimaLand.Parameters as LP
         p,
         t0,
     )
-    @test (@. ClimaLand.Snow.snowmelt_flux(
+    @test (@. ClimaLand.Snow.phase_change_flux(
         p.snow.turbulent_fluxes.lhf + p.snow.turbulent_fluxes.shf + p.snow.R_n,
         p.snow.T,
         model.parameters,
-    )) == p.snow.snowmelt
+    )) == p.snow.phase_change_flux
     @test turb_fluxes.shf == p.snow.turbulent_fluxes.shf
     @test turb_fluxes.lhf == p.snow.turbulent_fluxes.lhf
     @test turb_fluxes.vapor_flux == p.snow.turbulent_fluxes.vapor_flux
