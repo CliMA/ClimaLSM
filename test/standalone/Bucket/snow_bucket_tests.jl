@@ -168,7 +168,7 @@ for FT in (Float32, Float64)
               ClimaCore.Fields.zeros(surface_space)
         @test partitioned_fluxes.G_under_snow == F_sfc
         exp_tendency!(dY, Y, p, t0)
-        # Test that all water tendencies are zero (no precip, no phase_change_flux, no vapor loss)
+        # Test that all water tendencies are zero (no precip, no snowmelt, no vapor loss)
         @test dY.bucket.W == ClimaCore.Fields.zeros(surface_space)
         @test dY.bucket.Ws == ClimaCore.Fields.zeros(surface_space)
         @test dY.bucket.σS == ClimaCore.Fields.zeros(surface_space)
