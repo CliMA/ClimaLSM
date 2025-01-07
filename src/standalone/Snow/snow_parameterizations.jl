@@ -355,9 +355,9 @@ function phase_change_flux_alt(
 ) where {FT}
     _T_freeze = FT(LP.T_freeze(parameters.earth_param_set))
     if T >= _T_freeze
-        return -S / τ # melting
+        return -S / τ / 0.1 # melting
     elseif T < _T_freeze && Sl > eps(FT)
-        return Sl / τ # freezing
+        return Sl / τ / 0.1 # freezing
     else
         return FT(0)
     end
