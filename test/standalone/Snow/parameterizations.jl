@@ -33,7 +33,7 @@ for FT in (Float32, Float64)
         # These values should match ClimaParams
         ϵ_snow = FT(0.99)
         z_0b = FT(0.00024)
-        θ_r = FT(0.08)
+        θ_r = FT(0.0)
         Ksat = FT(1e-3)
         κ_ice = FT(2.21)
         ρcD_g = FT(1700 * 2.09e3 * 0.1)
@@ -72,8 +72,8 @@ for FT in (Float32, Float64)
               (FT(0.07) * (ρ_snow / _ρ_i) + FT(0.93) * (ρ_snow / _ρ_i)^2) *
               (κ_ice - κ_air)
         @test all(
-            maximum_liquid_mass_fraction.(T, ρ_snow, Ref(parameters)) .==
-            [FT(0), θ_r * _ρ_l / ρ_snow, θ_r * _ρ_l / ρ_snow],
+            maximum_liquid_mass_fraction.(ρ_snow, Ref(parameters)) .-
+            θ_r * _ρ_l / ρ_snow .== 0,
         )
 
         SWE = cat(FT.(rand(10)), FT(0), dims = 1)

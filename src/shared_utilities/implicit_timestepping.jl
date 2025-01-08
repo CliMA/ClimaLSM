@@ -119,7 +119,7 @@ function ImplicitEquationJacobian(Y::ClimaCore.Fields.FieldVector)
         @name(soil.θ_i),
         @name(canopy.hydraulics.ϑ_l),
         @name(snow.S),
-        @name(snow.Sl),
+        @name(snow.S_l),
         @name(snow.U)
     )
 

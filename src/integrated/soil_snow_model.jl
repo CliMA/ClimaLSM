@@ -345,16 +345,10 @@ function snow_boundary_fluxes!(
         (P_liq + p.snow.turbulent_fluxes.vapor_flux - p.snow.water_runoff) *
         p.snow.snow_cover_fraction
 
-
-    @. p.snow.phase_change_flux = ClimaLand.Snow.phase_change_flux(
-        p.snow.turbulent_fluxes.lhf + p.snow.turbulent_fluxes.shf + p.snow.R_n - p.ground_heat_flux,
-        p.snow.T,
-        model.parameters,
-    )
     @. p.snow.liquid_water_flux =
         (
             P_liq + p.snow.turbulent_fluxes.vapor_flux * p.snow.q_l -
-            p.snow.water_runoff + p.snow.phase_change_flux
+            p.snow.water_runoff
         ) * p.snow.snow_cover_fraction
 
     # I think we want dU/dt to include energy of falling snow.

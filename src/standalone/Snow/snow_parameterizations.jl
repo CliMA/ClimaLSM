@@ -9,7 +9,8 @@ export snow_surface_temperature,
     energy_from_q_l_and_swe,
     energy_from_T_and_swe,
     snow_cover_fraction,
-    snow_bulk_density
+    snow_bulk_density,
+    phase_change_flux
 
 """
     snow_cover_fraction(x::FT; α = FT(1e-3))::FT where {FT}
@@ -19,7 +20,7 @@ function at 1e-3 meters.
 
 In the future we can play around with other forms.
 """
-function snow_cover_fraction(x::FT; α = eps(FT))::FT where {FT}
+function snow_cover_fraction(x::FT; α = FT(1e-3))::FT where {FT}
     return heaviside(x - α)
 end
 
@@ -194,7 +195,7 @@ Computes the bulk snow temperature from the snow water equivalent S,
 energy per unit area U, liquid water S_l, and specific heat
 capacity c_s, along with other needed parameters.
 
-If there is no snow (U = S = 0), the bulk temperature is the reference temperature,
+If there is no snow (U = S = S_l = 0), the bulk temperature is the reference temperature,
 which is 273.16K.
 """
 function snow_bulk_temperature(
@@ -205,7 +206,7 @@ function snow_bulk_temperature(
 ) where {FT}
     S_safe = max(S, eps(FT))
     S_l_safe = min(max(S_l, eps(FT)), S_safe)
-    q_l_safe = S_l_safe / (S_safe + eps(FT))
+    q_l_safe = S_l_safe / S_safe
     _ρ_l = FT(LP.ρ_cloud_liq(parameters.earth_param_set))
     _T_ref = FT(LP.T_0(parameters.earth_param_set))
     _LH_f0 = FT(LP.LH_f0(parameters.earth_param_set))
@@ -235,23 +236,17 @@ end
 
 
 """
-    maximum_liquid_mass_fraction(T::FT, ρ_snow::FT, parameters::SnowParameters{FT}) where {FT}
+    maximum_liquid_mass_fraction(ρ_snow::FT, parameters::SnowParameters{FT}) where {FT}
 
-Computes the maximum liquid water mass fraction, given the bulk temperature of the snow T,
-the density of the snow ρ_snow, and parameters.
+Computes the maximum liquid water mass fraction, given
+the density of the snow ρ_snow and other parameters.
 """
 function maximum_liquid_mass_fraction(
-    T::FT,
     ρ_snow::FT,
     parameters::SnowParameters{FT},
 ) where {FT}
     _ρ_l = FT(LP.ρ_cloud_liq(parameters.earth_param_set))
-    _T_freeze = FT(LP.T_freeze(parameters.earth_param_set))
-    if T > _T_freeze
-        return FT(0)
-    else
-        return parameters.θ_r * _ρ_l / ρ_snow
-    end
+    return parameters.θ_r * _ρ_l / ρ_snow
 end
 
 
@@ -300,7 +295,7 @@ function compute_water_runoff(
     parameters,
 ) where {FT}
     τ = runoff_timescale(z, parameters.Ksat, parameters.Δt)
-    q_l_max::FT = maximum_liquid_mass_fraction(T, ρ_snow, parameters)
+    q_l_max::FT = maximum_liquid_mass_fraction(ρ_snow, parameters)
     S_safe = max(S, eps(FT))
     S_l_safe = min(max(S_l, eps(FT)), S_safe)
     return -(S_l_safe - q_l_max * S_safe) / τ *
@@ -308,25 +303,23 @@ function compute_water_runoff(
 end
 
 """
-     phase_change_flux(U::FT, S::FT, Sl::FT, energy_flux::FT, parameters) where {FT}
+     phase_change_flux(U::FT, S::FT, S_l::FT, energy_flux::FT, parameters) where {FT}
 
 Computes the volume flux of liquid water undergoing phase change, given the 
-applied energy flux and current state of U,S,Sl. 
+applied energy flux and current state of U,S,S_l. 
 """
 function phase_change_flux(
     U::FT,
     S::FT,
     S_l::FT,
-    T::FT,
-    τ::FT,
     energy_flux::FT,
     parameters,
 ) where {FT}
     S_safe = max(S, eps(FT))
     S_l_safe = min(max(S_l, eps(FT)), S_safe)
-    q_l_safe = S_l_safe / (S_safe + eps(FT))
+    q_l_safe = S_l_safe / S_safe
 
-    energy_at_T_freeze = energy_from_q_l_and_swe(S, q_l_safe, parameters)
+    energy_at_T_freeze = energy_from_q_l_and_swe(S_safe, q_l_safe, parameters)
     Upred = U - energy_flux * parameters.Δt
     energy_excess = Upred - energy_at_T_freeze
 
@@ -339,29 +332,12 @@ function phase_change_flux(
     if energy_excess > 0
         return -energy_excess / parameters.Δt / _ρ_liq /
                ((_cp_l - _cp_i) * (_T_freeze - _T_ref) + _LH_f0)
-    elseif S_l_safe > eps(FT) && T < _T_freeze
-        return S_l / τ
+    elseif energy_excess < 0 && S_l > eps(FT) # predicted energy is below energy at freezing point, but liquid water remains, freeze some
+        return -energy_excess / parameters.Δt / _ρ_liq /
+               ((_cp_l - _cp_i) * (_T_freeze - _T_ref) + _LH_f0)
     else
         return FT(0)
     end
-end
-
-function phase_change_flux_alt(
-    T::FT,
-    S::FT,
-    Sl::FT,
-    τ::FT,
-    parameters,
-) where {FT}
-    _T_freeze = FT(LP.T_freeze(parameters.earth_param_set))
-    if T >= _T_freeze
-        return -S / τ / 0.1 # melting
-    elseif T < _T_freeze && Sl > eps(FT)
-        return Sl / τ / 0.1 # freezing
-    else
-        return FT(0)
-    end
-
 end
 
 """

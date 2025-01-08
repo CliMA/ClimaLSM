@@ -329,7 +329,7 @@ function setup_prob(t0, tf, Δt; outdir = outdir, nelements = (101, 15))
     evaluate!(Y.canopy.energy.T, atmos.T, t0)
 
     Y.snow.S .= 0
-    Y.snow.Sl .= 0
+    Y.snow.S_l .= 0
     Y.snow.U .= 0
 
     set_initial_cache! = make_set_initial_cache(land)

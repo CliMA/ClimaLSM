@@ -135,7 +135,7 @@ function init_soil!(Y, z, params)
 end
 function init_snow!(Y, S)
     Y.snow.S .= S
-    Y.snow.Sl .= 0
+    Y.snow.S_l .= 0
     @. Y.snow.U =
         ClimaLand.Snow.energy_from_q_l_and_swe(Y.snow.S, 1.0f0, snow_params)
 end

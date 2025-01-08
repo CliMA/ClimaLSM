@@ -319,7 +319,7 @@ function setup_prob(t0, tf, Δt; outdir = outdir, nelements = (10, 10, 15))
     init_soil(ν, θ_r) = θ_r + (ν - θ_r) / 2
 
     Y.snow.S .= 0.0
-    Y.snow.Sl .= 0.0
+    Y.snow.S_l .= 0.0
     Y.snow.U .= 0.0
 
     Y.soil.ϑ_l .= init_soil.(ν, θ_r)

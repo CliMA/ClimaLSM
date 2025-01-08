@@ -51,7 +51,7 @@ import ClimaLand.Parameters as LP
     drivers = ClimaLand.get_drivers(model)
     @test drivers == (atmos, rad)
     Y, p, coords = ClimaLand.initialize(model)
-    @test (Y.snow |> propertynames) == (:S, :Sl, :U)
+    @test (Y.snow |> propertynames) == (:S, :S_l, :U)
     @test (p.snow |> propertynames) == (
         :q_l,
         :κ,
@@ -66,14 +66,13 @@ import ClimaLand.Parameters as LP
         :liquid_water_flux,
         :total_energy_flux,
         :total_water_flux,
-        :applied_liquid_water_flux,
         :applied_energy_flux,
         :applied_water_flux,
         :snow_cover_fraction,
     )
 
     Y.snow.S .= FT(0.1)
-    Y.snow.Sl .= FT(0.01)
+    Y.snow.S_l .= FT(0.01)
     Y.snow.U .=
         ClimaLand.Snow.energy_from_T_and_swe.(
             Y.snow.S,
@@ -96,16 +95,15 @@ import ClimaLand.Parameters as LP
         p,
         t0,
     )
-    @test p.snow.q_l == Y.snow.Sl ./ Y.snow.S
-    @test p.snow.T_sfc ==
-          snow_surface_temperature.(
-        snow_bulk_temperature.(
-            Y.snow.U,
-            Y.snow.S,
-            p.snow.q_l,
-            Ref(model.parameters),
-        )
+    @test p.snow.q_l == Y.snow.S_l ./ Y.snow.S
+    @test p.snow.T ==
+          snow_bulk_temperature.(
+        Y.snow.U,
+        Y.snow.S,
+        Y.snow.S_l,
+        model.parameters,
     )
+    @test p.snow.T_sfc == @. snow_surface_temperature(p.snow.T)
 
     ρ_sfc = ClimaLand.surface_air_density(
         model.boundary_conditions.atmos,
@@ -132,8 +130,10 @@ import ClimaLand.Parameters as LP
         t0,
     )
     @test (@. ClimaLand.Snow.phase_change_flux(
-        p.snow.turbulent_fluxes.lhf + p.snow.turbulent_fluxes.shf + p.snow.R_n,
-        p.snow.T,
+        Y.snow.U,
+        Y.snow.S,
+        Y.snow.S_l,
+        p.snow.applied_energy_flux,
         model.parameters,
     )) == p.snow.phase_change_flux
     @test turb_fluxes.shf == p.snow.turbulent_fluxes.shf
@@ -153,8 +153,7 @@ import ClimaLand.Parameters as LP
         p.snow.water_runoff
     )
     @test dY.snow.S == net_water_fluxes
-    @test dY.snow.Sl == @. -p.snow.turbulent_fluxes.vapor_flux * p.snow.q_l +
-             p.snow.water_runoff
+    @test dY.snow.S_l == @. -Y.snow.S_l / model.parameters.Δt # refreezes
     @test dY.snow.U == @.(
         -p.snow.turbulent_fluxes.shf - p.snow.turbulent_fluxes.lhf -
         p.snow.R_n + p.snow.energy_runoff

@@ -249,7 +249,7 @@ end
 Y.canopy.energy.T = drivers.TA.values[1 + Int(round(t0 / DATA_DT))] # Get atmos temperature at t0
 
 Y.snow.S .= 0.0
-Y.snow.Sl .= 0.0
+Y.snow.S_l .= 0.0
 Y.snow.U .= 0.0
 
 set_initial_cache! = make_set_initial_cache(land)
