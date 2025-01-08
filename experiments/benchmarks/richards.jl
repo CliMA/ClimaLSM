@@ -57,6 +57,8 @@ device_suffix = device isa ClimaComms.CPUSingleThreaded ? "cpu" : "gpu"
 outdir = "richards_benchmark_$(device_suffix)"
 !ispath(outdir) && mkpath(outdir)
 
+ClimaComms.device() isa ClimaComms.CUDADevice && import CUDA
+
 function setup_prob(t0, tf, Δt; nelements = (101, 15))
     soil_depth = FT(50)
     domain = ClimaLand.Domains.SphericalShell(;
@@ -224,14 +226,17 @@ timings_s = Float64[]
 while (time() - time_now) < MAX_PROFILING_TIME_SECONDS &&
     length(timings_s) < MAX_PROFILING_SAMPLES
     lprob, lode_algo, lΔt, lcb = setup_simulation()
+    ClimaComms.device() isa ClimaComms.CUDADevice && CUDA.synchronize()
+    timing = ClimaComms.@elapsed device SciMLBase.solve(
+        lprob,
+        lode_algo;
+        dt = lΔt,
+        callback = lcb,
+    )
+    ClimaComms.device() isa ClimaComms.CUDADevice && CUDA.synchronize()
     push!(
         timings_s,
-        ClimaComms.@elapsed device SciMLBase.solve(
-            lprob,
-            lode_algo;
-            dt = lΔt,
-            callback = lcb,
-        )
+        timing
     )
 end
 num_samples = length(timings_s)
@@ -270,7 +275,6 @@ ProfileCanvas.html_file(alloc_flame_file, profile)
 @info "Saved allocation flame to $alloc_flame_file"
 
 if ClimaComms.device() isa ClimaComms.CUDADevice
-    import CUDA
     lprob, lode_algo, lΔt, lcb = setup_simulation()
     p = CUDA.@profile SciMLBase.solve(
         lprob,
