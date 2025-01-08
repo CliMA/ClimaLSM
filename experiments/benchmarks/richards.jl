@@ -233,7 +233,6 @@ while (time() - time_now) < MAX_PROFILING_TIME_SECONDS &&
         dt = lΔt,
         callback = lcb,
     )
-    ClimaComms.device() isa ClimaComms.CUDADevice && CUDA.synchronize()
     push!(
         timings_s,
         timing
@@ -247,6 +246,7 @@ std_timing_s = round(
     sqrt(sum(((timings_s .- average_timing_s) .^ 2) / num_samples)),
     sigdigits = 3,
 )
+@info "Samples: $timings_s"
 @info "Num samples: $num_samples"
 @info "Average time: $(average_timing_s) s"
 @info "Max time: $(max_timing_s) s"
