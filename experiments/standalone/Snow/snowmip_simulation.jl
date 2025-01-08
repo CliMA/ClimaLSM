@@ -42,7 +42,7 @@ ClimaComms.init(context)
 include(
     joinpath(climaland_dir, "experiments/standalone/Snow/process_snowmip.jl"),
 )
-savedir = generate_output_path("experiments/standalone/Snow/")
+savedir = generate_output_path("experiments/standalone/Snow/$(SITE_NAME)")
 t0 = FT(0.0)
 tf = FT(seconds[end])
 ndays = (tf - t0) / 3600 / 24
@@ -52,7 +52,6 @@ domain = ClimaLand.Domains.Point(; z_sfc = FT(0))
 
 #density_model = NeuralSnow.NeuralDepthModel(FT)
 density_model = Snow.ConstantDensityModel(ρ)
-depths = z[snow_data_avail]
 
 parameters = SnowParameters{FT}(
     Δt;
@@ -69,6 +68,7 @@ Y, p, coords = ClimaLand.initialize(model)
 
 # Set initial conditions
 Y.snow.S .= FT(SWE[1]) # first data point
+Y.snow.S_l .= 0 # this is a guess
 #Y.snow.Z .= FT(depths[1]) #uncomment if using NeuralDepthModel instead of ConstantDensityModel
 Y.snow.U .=
     ClimaLand.Snow.energy_from_q_l_and_swe(FT(SWE[1]), FT(0), parameters) # with q_l = 0
@@ -85,7 +85,6 @@ ode_algo = CTS.IMEXAlgorithm(
         update_j = CTS.UpdateEvery(CTS.NewTimeStep),
     ),
 );
-
 
 prob = SciMLBase.ODEProblem(
     CTS.ClimaODEFunction(
@@ -128,12 +127,15 @@ evaporation = [
 R_n = [parent(sv.saveval[k].snow.R_n)[1] for k in 1:length(sol.t)];
 water_runoff =
     [parent(sv.saveval[k].snow.water_runoff)[1] for k in 1:length(sol.t)];
+phase_change_flux =
+    [parent(sv.saveval[k].snow.phase_change_flux)[1] for k in 1:length(sol.t)];
 rain = [parent(sv.saveval[k].drivers.P_liq)[1] for k in 1:length(sv.t)];
 snow = [parent(sv.saveval[k].drivers.P_snow)[1] for k in 1:length(sv.t)];
 scf =
     [parent(sv.saveval[k].snow.snow_cover_fraction)[1] for k in 1:length(sol.t)];
-
+ρ = [parent(sv.saveval[k].snow.ρ_snow)[1] for k in 1:length(sol.t)];
 S = [parent(sol.u[k].snow.S)[1] for k in 1:length(sol.t)];
+S_l = [parent(sol.u[k].snow.S_l)[1] for k in 1:length(sol.t)];
 U = [parent(sol.u[k].snow.U)[1] for k in 1:length(sol.t)];
 t = sol.t;
 
@@ -171,7 +173,9 @@ ax1 = CairoMakie.Axis(fig[1, 1], ylabel = "Water Vol/Area ground")
 
 xlims!(ax1, 0, ndays)
 CairoMakie.hidexdecorations!(ax1, ticks = false)
-CairoMakie.lines!(ax1, daily, S, label = "Model")
+CairoMakie.lines!(ax1, daily, S, label = "Model SWE")
+CairoMakie.lines!(ax1, daily, S_l, label = "Model SWE_l")
+
 CairoMakie.scatter!(
     ax1,
     seconds[snow_data_avail] ./ 24 ./ 3600,
@@ -285,8 +289,15 @@ CairoMakie.lines!(
     ax1,
     daily,
     cumsum(water_runoff .* scf) .* Δt,
-    label = "Runoff/Melt",
+    label = "Runoff",
     color = :blue,
+)
+CairoMakie.lines!(
+    ax1,
+    daily,
+    cumsum(phase_change_flux .* scf) .* Δt,
+    label = "Phase Change",
+    color = :orange,
 )
 CairoMakie.axislegend(ax1, position = :lb)
 
@@ -350,3 +361,62 @@ CairoMakie.lines!(
 )
 
 CairoMakie.save(joinpath(savedir, "conservation_$(SITE_NAME).png"), fig)
+
+
+# Paper plot
+
+fig = CairoMakie.Figure(size = (1100, 1400), fontsize = 26)
+# set limits
+ax1 = CairoMakie.Axis(fig[1, 1], ylabel = "SWE (m)")
+
+xlims!(ax1, 0, ndays)
+CairoMakie.hidexdecorations!(ax1, ticks = false)
+CairoMakie.lines!(ax1, daily, S, label = "Model S")
+CairoMakie.lines!(ax1, daily, S_l, label = "Model S_l")
+CairoMakie.scatter!(
+    ax1,
+    seconds[snow_data_avail] ./ 24 ./ 3600,
+    SWE,
+    label = "Data S",
+    color = :red,
+)
+CairoMakie.axislegend(ax1, position = :rt)
+ax2 = CairoMakie.Axis(fig[2, 1], ylabel = "Depth (m)")
+
+xlims!(ax2, 0, ndays)
+CairoMakie.hidexdecorations!(ax2, ticks = false)
+CairoMakie.lines!(ax2, daily, 1000 .* S ./ ρ, label = "Model z")
+CairoMakie.scatter!(
+    ax2,
+    seconds[snow_data_avail] ./ 24 ./ 3600,
+    FT.(depths),
+    label = "Data z",
+    color = :red,
+)
+CairoMakie.axislegend(ax2, position = :rt)
+s = "$(start_date)"
+
+ax3 = CairoMakie.Axis(
+    fig[3, 1],
+    ylabel = "Temperature (K)",
+    xlabel = "Days since $(s[1:10])",
+)
+CairoMakie.lines!(ax3, daily, T, label = "Model")
+CairoMakie.lines!(
+    ax3,
+    daily,
+    zeros(length(daily)) .+ 273.15,
+    label = "Freezing Temperature",
+    color = :purple,
+    linestyle = :dot,
+)
+CairoMakie.scatter!(
+    ax3,
+    seconds[snow_data_avail] ./ 24 ./ 3600,
+    FT.(T_snow) .+ 273.15,
+    label = "Data",
+    color = :red,
+)
+xlims!(ax3, 0, ndays)
+CairoMakie.axislegend(ax3, position = :rt)
+CairoMakie.save(joinpath(savedir, "data_comparison_$(SITE_NAME).png"), fig)
