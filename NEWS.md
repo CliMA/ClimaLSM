@@ -4,6 +4,9 @@ ClimaLand.jl Release Notes
 main
 -------
 
+- Change `Soil.phase_change_source` interface to take model parameters
+  as the final argument; remove `HydrologyEarthParameters` struct.
+  PR[#982](https://github.com/CliMA/ClimaLand.jl/pull/982)
 
 v0.15.7
 -------
