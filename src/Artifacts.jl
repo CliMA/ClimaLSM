@@ -33,6 +33,18 @@ function era5_lai_forcing_data2008_folder_path(; context = nothing)
 end
 
 """
+    era5_surface_data2008_path(; context)
+
+Return the path to the folder that contains the ERA5 monthly surface data
+
+NOTE: We should be able to use @clima_artifact here, but the folders on central
+seem to be named differently than the artifact name
+"""
+function era5_surface_data2008_path(; context = nothing)
+    return "/groups/esm/ClimaArtifacts/artifacts/era5_surface_fluxes_2008"
+end
+
+"""
     clm_data__folder_path(; context)
 
 Return the path to the folder that contains the clm data.
