@@ -33,6 +33,16 @@ function era5_lai_forcing_data2008_folder_path(; context = nothing)
 end
 
 """
+    modis_lai_forcing_data2008_path(; context)
+
+Return the path to the directory that contains the MODIS LAI forcing data for
+the year 2008.
+"""
+function modis_lai_forcing_data2008_path(; context = nothing)
+    return @clima_artifact("modis_lai", context)
+end
+
+"""
     clm_data__folder_path(; context)
 
 Return the path to the folder that contains the clm data.

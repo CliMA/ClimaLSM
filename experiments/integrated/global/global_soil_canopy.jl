@@ -124,12 +124,12 @@ conductance_args = (; parameters = Canopy.MedlynConductanceParameters(FT; g1))
 photosynthesis_args =
     (; parameters = Canopy.FarquharParameters(FT, is_c3; Vcmax25 = Vcmax25))
 # Set up plant hydraulics
-era5_lai_artifact_path =
-    ClimaLand.Artifacts.era5_lai_forcing_data2008_folder_path(; context)
-era5_lai_ncdata_path =
-    joinpath(era5_lai_artifact_path, "era5_2008_1.0x1.0_lai.nc")
-LAIfunction = ClimaLand.prescribed_lai_era5(
-    era5_lai_ncdata_path,
+modis_lai_artifact_path =
+    ClimaLand.Artifacts.modis_lai_forcing_data2008_path(; context)
+modis_lai_ncdata_path =
+    joinpath(modis_lai_artifact_path, "Yuan_et_al_2011_1x1.nc")
+LAIfunction = ClimaLand.prescribed_lai_modis(
+    modis_lai_ncdata_path,
     surface_space,
     start_date;
     time_interpolation_method = time_interpolation_method,

@@ -36,6 +36,13 @@ git-tree-sha1 = "df5ec5af1ea0793c0e7d49e60db5a938098e174f"
     sha256 = "a83bf28a7a864db285e41289031a9761c2a426373a6efecd04b866a0b5374cef"
     url = "https://caltech.box.com/shared/static/m82r23e67x04a3hb6p79dfltlumvg9z0.gz"
 
+[modis_lai]
+git-tree-sha1 = "20ee5dc96fde9a15bd3c40e80ac5036a9a39e0cf"
+
+    [[modis_lai.download]]
+    sha256 = "e97bf4a8eeac7c32c00a7d27bf5ec957e9c800117d56e66c27a123171a1f1c04"
+    url = "https://caltech.box.com/shared/static/99ktg026kciezykyegsawd1gjwj1du74.gz"
+
 [land_albedo]
 git-tree-sha1 = "3f07b70ab43a05123e93753a45e094dcf7a66b5b"
 

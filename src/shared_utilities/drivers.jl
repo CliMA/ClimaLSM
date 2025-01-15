@@ -1198,6 +1198,35 @@ function prescribed_lai_era5(
     )
 end
 
+"""
+     prescribed_lai_modis(modis_lai_ncdata_path,
+                          surface_space,
+                          start_date,
+                          earth_param_set;
+                          time_interpolation_method =
+                                        LinearInterpolation(PeriodicCalendar()))
+                          regridder_type = :InterpolationsRegridder)
+
+A helper function which constructure the TimeVaryingInput object for Lead Area
+Index from a file path pointint to the MODIS LAI data in a netcdf file, the
+surface_space, the start date, and the earth_param_set.
+"""
+function prescribed_lai_modis(
+    modis_lai_ncdata_path,
+    surface_space,
+    start_date;
+    time_interpolation_method = LinearInterpolation(PeriodicCalendar()),
+    regridder_type = :InterpolationsRegridder,
+)
+    return TimeVaryingInput(
+        modis_lai_ncdata_path,
+        ["lai"],
+        surface_space;
+        start_date,
+        regridder_type,
+        method = time_interpolation_method,
+    )
+end
 
 """
      prescribed_analytic_forcing(FT = Float32;
