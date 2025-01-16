@@ -17,7 +17,6 @@ ClimaLand.Snow.snow_surface_temperature
 ClimaLand.Snow.snow_depth
 ClimaLand.Snow.snow_thermal_conductivity
 ClimaLand.Snow.snow_bulk_temperature
-ClimaLand.Snow.snow_liquid_mass_fraction
 ClimaLand.Snow.maximum_liquid_mass_fraction
 ClimaLand.Snow.runoff_timescale
 ClimaLand.Snow.compute_water_runoff	
@@ -30,5 +29,6 @@ ClimaLand.Snow.snow_cover_fraction
 
 ```@docs
 ClimaLand.Snow.snow_boundary_fluxes!
+ClimaLand.Snow.phase_change_flux
 ClimaLand.Snow.AtmosDrivenSnowBC
 ```
