@@ -16,7 +16,14 @@ for d in values(CL.Diagnostics.ALL_DIAGNOSTICS)
     push!(comments, d.comments)
     push!(standard_names, d.standard_name)
 end
-data = hcat(short_names, long_names, units, comments, standard_names)
+i = sortperm(short_names) # indices of short_names sorted alphabetically
+data = hcat(
+    short_names[i],
+    long_names[i],
+    units[i],
+    comments[i],
+    standard_names[i],
+)
 pretty_table(
     data;
     autowrap = true,
