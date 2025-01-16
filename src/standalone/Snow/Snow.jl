@@ -45,8 +45,9 @@ abstract type AbstractSnowModel{FT} <: ClimaLand.AbstractExpModel{FT} end
 """
     AbstractDensityModel{FT}
 Defines the model type for density and depth parameterizations
-for use within an `AbstractSnowModel` type. Current examples include the
-`ConstantDensityModel` models.
+for use within an `AbstractSnowModel` type. Currently we support a
+`ConstantDryDensityModel` model and the `NeuralDepthModel`.
+
 Since depth and bulk density are related via SWE, and SWE is a prognostic variable
 of the snow model, only depth or bulk density can be independently modeled at one time. 
 This is why they are treated as a single "density model" even if the parameterization is actually
@@ -56,12 +57,13 @@ The snow depth/density model can be diagnostic or introduce additional prognosti
 abstract type AbstractDensityModel{FT <: AbstractFloat} end
 
 """
-    ConstantDensityModel{FT <: AbstractFloat} <: AbstractDensityModel{FT}
-Establishes the density parameterization where snow density
+    ConstantDryDensityModel{FT <: AbstractFloat} <: AbstractDensityModel{FT}
+
+Establishes the density parameterization where snow dry density
 is always treated as a constant (type FT), with the provided value in units of kg/m³.
 """
-struct ConstantDensityModel{FT} <: AbstractDensityModel{FT}
-    ρ_snow::FT
+struct ConstantDryDensityModel{FT} <: AbstractDensityModel{FT}
+    ρ_drysnow::FT
 end
 
 
@@ -109,12 +111,12 @@ end
 
 """
    SnowParameters{FT}(Δt;
-                      density = ConstantDensityModel(200),
+                      density = ConstantDryDensityModel(200),
                       z_0m = FT(0.0024),
                       z_0b = FT(0.00024),
                       α_snow = FT(0.8),
                       ϵ_snow = FT(0.99),
-                      θ_r = FT(0.0),
+                      θ_r = FT(0.08),
                       Ksat = FT(1e-3),
                       κ_ice = FT(2.21),
                       ρcD_g = FT(3.553e5),
@@ -125,12 +127,12 @@ all arguments but `earth_param_set`.
 """
 function SnowParameters{FT}(
     Δt;
-    density::DM = ConstantDensityModel(FT(200)),
+    density::DM = ConstantDryDensityModel(FT(200)),
     z_0m = FT(0.0024),
     z_0b = FT(0.00024),
     α_snow = FT(0.8),
     ϵ_snow = FT(0.99),
-    θ_r = FT(0.0),
+    θ_r = FT(0.08),
     Ksat = FT(1e-3),
     κ_ice = FT(2.21),
     ρcD_g = FT(3.553e5),
@@ -377,9 +379,11 @@ function ClimaLand.make_update_boundary_fluxes(model::SnowModel{FT}) where {FT}
         )
         @. p.snow.liquid_water_flux +=
             p.snow.phase_change_flux * p.snow.snow_cover_fraction
-        @. p.snow.liquid_water_flux = clip_water_flux(
+        @. p.snow.liquid_water_flux = clip_liquid_water_flux(
             Y.snow.S_l,
+            Y.snow.S,
             p.snow.liquid_water_flux,
+            p.snow.applied_water_flux,
             model.parameters.Δt,
         )
     end
@@ -407,6 +411,30 @@ function clip_water_flux(S::FT, total_water_flux::FT, Δt::FT) where {FT}
         return S / Δt
     else
         return total_water_flux
+    end
+end
+
+"""
+    clip_liquid_water_flux(S_l::FT, S::FT, liquid_water_flux::FT, applied_water_flux::FT, Δt::FT) where {FT}
+
+A helper function which clips the liquid water flux so that
+snow liquid water S_l will not become negative or exceed S in a timestep Δt.
+"""
+function clip_liquid_water_flux(
+    S_l::FT,
+    S::FT,
+    liquid_water_flux::FT,
+    applied_water_flux::FT,
+    Δt::FT,
+) where {FT}
+    predicted_S = S - applied_water_flux * Δt
+    predicted_S_l = S_l - liquid_water_flux * Δt
+    if predicted_S_l < 0
+        return S_l / Δt
+    elseif predicted_S_l > predicted_S
+        return (S_l - predicted_S) / Δt
+    else
+        return liquid_water_flux
     end
 end
 

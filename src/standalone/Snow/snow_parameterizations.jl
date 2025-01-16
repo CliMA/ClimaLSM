@@ -236,17 +236,23 @@ end
 
 
 """
-    maximum_liquid_mass_fraction(ρ_snow::FT, parameters::SnowParameters{FT}) where {FT}
+    maximum_liquid_mass_fraction(ρ_snow::FT, T::FT, parameters::SnowParameters{FT}) where {FT}
 
 Computes the maximum liquid water mass fraction, given
 the density of the snow ρ_snow and other parameters.
 """
 function maximum_liquid_mass_fraction(
     ρ_snow::FT,
+    T::FT,
     parameters::SnowParameters{FT},
 ) where {FT}
     _ρ_l = FT(LP.ρ_cloud_liq(parameters.earth_param_set))
-    return parameters.θ_r * _ρ_l / ρ_snow
+    _T_freeze = FT(LP.T_freeze(parameters.earth_param_set))
+    if T > _T_freeze
+        return FT(0)
+    else
+        parameters.θ_r * _ρ_l / ρ_snow
+    end
 end
 
 
@@ -295,7 +301,7 @@ function compute_water_runoff(
     parameters,
 ) where {FT}
     τ = runoff_timescale(z, parameters.Ksat, parameters.Δt)
-    q_l_max::FT = maximum_liquid_mass_fraction(ρ_snow, parameters)
+    q_l_max::FT = maximum_liquid_mass_fraction(ρ_snow, T, parameters)
     S_safe = max(S, eps(FT))
     S_l_safe = min(max(S_l, eps(FT)), S_safe)
     return -(S_l_safe - q_l_max * S_safe) / τ *
@@ -329,10 +335,7 @@ function phase_change_flux(
     _cp_l = FT(LP.cp_l(parameters.earth_param_set))
     _T_ref = FT(LP.T_0(parameters.earth_param_set))
     _T_freeze = FT(LP.T_freeze(parameters.earth_param_set))
-    if energy_excess > 0
-        return -energy_excess / parameters.Δt / _ρ_liq /
-               ((_cp_l - _cp_i) * (_T_freeze - _T_ref) + _LH_f0)
-    elseif energy_excess < 0 && S_l > eps(FT) # predicted energy is below energy at freezing point, but liquid water remains, freeze some
+    if energy_excess > 0 || (energy_excess < 0 && S_l > eps(FT))
         return -energy_excess / parameters.Δt / _ρ_liq /
                ((_cp_l - _cp_i) * (_T_freeze - _T_ref) + _LH_f0)
     else
@@ -386,6 +389,7 @@ end
 
 """
     update_density!(density::AbstractDensityModel, params::SnowParameters, Y, p)
+
 Updates the snow density given the current model state. Default for all model types,
 can be extended for alternative density paramterizations.
 """
@@ -400,17 +404,18 @@ function update_density!(
 end
 
 """
-    update_density!(density::ConstantDensityModel, params::SnowParameters, Y, p)
-Extends the update_density! function for the ConstantDensityModel type.
+    update_density!(density::ConstantDryDensityModel, params::SnowParameters, Y, p)
+
+Extends the update_density! function for the ConstantDryDensityModel type.
 """
 function update_density!(
-    density::ConstantDensityModel{FT},
+    density::ConstantDryDensityModel{FT},
     params::SnowParameters,
     Y,
     p,
 ) where {FT}
     _ρ_l = FT(LP.ρ_cloud_liq(params.earth_param_set))
-    @. p.snow.ρ_snow = density.ρ_snow * (1 - p.snow.q_l) + _ρ_l * p.snow.q_l
+    @. p.snow.ρ_snow = density.ρ_drysnow * (1 - p.snow.q_l) + _ρ_l * p.snow.q_l
 end
 
 """

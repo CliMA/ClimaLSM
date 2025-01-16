@@ -140,7 +140,7 @@ import ClimaLand.Parameters as LP
     @test turb_fluxes.lhf == p.snow.turbulent_fluxes.lhf
     @test turb_fluxes.vapor_flux == p.snow.turbulent_fluxes.vapor_flux
     @test p.snow.ρ_snow ==
-          @. model.parameters.density.ρ_snow * (1 - p.snow.q_l) +
+          @. model.parameters.density.ρ_drysnow * (1 - p.snow.q_l) +
              _ρ_l * p.snow.q_l
 
     # Now compute tendencies and make sure they operate correctly.

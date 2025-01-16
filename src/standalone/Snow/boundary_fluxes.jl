@@ -80,7 +80,7 @@ end
 """
     snow_boundary_fluxes!(
         bc::AtmosDrivenSnowBC,
-v        prognostic_land_components::Val{(:snow,)},
+        prognostic_land_components::Val{(:snow,)},
         model::SnowModel{FT},
         Y,
         p,

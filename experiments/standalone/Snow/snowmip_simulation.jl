@@ -51,7 +51,7 @@ ndays = (tf - t0) / 3600 / 24
 domain = ClimaLand.Domains.Point(; z_sfc = FT(0))
 
 #density_model = NeuralSnow.NeuralDepthModel(FT)
-density_model = Snow.ConstantDensityModel(ρ)
+density_model = Snow.ConstantDryDensityModel(ρ)
 
 parameters = SnowParameters{FT}(
     Δt;
@@ -69,7 +69,7 @@ Y, p, coords = ClimaLand.initialize(model)
 # Set initial conditions
 Y.snow.S .= FT(SWE[1]) # first data point
 Y.snow.S_l .= 0 # this is a guess
-#Y.snow.Z .= FT(depths[1]) #uncomment if using NeuralDepthModel instead of ConstantDensityModel
+#Y.snow.Z .= FT(depths[1]) #uncomment if using NeuralDepthModel instead of ConstantDryDensityModel
 Y.snow.U .=
     ClimaLand.Snow.energy_from_q_l_and_swe(FT(SWE[1]), FT(0), parameters) # with q_l = 0
 
@@ -144,10 +144,10 @@ days = start_day .+ floor.(t ./ 3600 ./ 24)
 doys = days .% 365 # doesn't account for leap year
 
 obs_swes = Vector{Union{Float64, Missing}}(missing, length(doys))
-obs_swes[snow_data_avail] .= mass[snow_data_avail] ./ 1000
+obs_swes[mass_data_avail] .= mass[mass_data_avail] ./ 1000
 
 obs_tsnows = Vector{Union{Float64, Missing}}(missing, length(doys))
-obs_tsnows[snow_data_avail] = T_snow .+ 273.15
+obs_tsnows[mass_data_avail] = T_snow .+ 273.15
 
 obs_df = DataFrame(
     doy = doys,
@@ -178,7 +178,7 @@ CairoMakie.lines!(ax1, daily, S_l, label = "Model SWE_l")
 
 CairoMakie.scatter!(
     ax1,
-    seconds[snow_data_avail] ./ 24 ./ 3600,
+    seconds[mass_data_avail] ./ 24 ./ 3600,
     SWE,
     label = "Data",
     color = :red,
@@ -219,15 +219,15 @@ CairoMakie.hidexdecorations!(ax1, ticks = false)
 CairoMakie.lines!(ax1, daily, T, label = "Model")
 CairoMakie.scatter!(
     ax1,
-    seconds[snow_data_avail] ./ 24 ./ 3600,
+    seconds[mass_data_avail] ./ 24 ./ 3600,
     T_snow .+ 273.15,
     label = "Snow T",
     color = :red,
 )
 CairoMakie.scatter!(
     ax1,
-    seconds[snow_data_avail] ./ 24 ./ 3600,
-    Tair[snow_data_avail],
+    seconds[mass_data_avail] ./ 24 ./ 3600,
+    Tair[mass_data_avail],
     label = "Atmosphere T",
     color = :orange,
 )
@@ -375,7 +375,7 @@ CairoMakie.lines!(ax1, daily, S, label = "Model S")
 CairoMakie.lines!(ax1, daily, S_l, label = "Model S_l")
 CairoMakie.scatter!(
     ax1,
-    seconds[snow_data_avail] ./ 24 ./ 3600,
+    seconds[mass_data_avail] ./ 24 ./ 3600,
     SWE,
     label = "Data S",
     color = :red,
@@ -388,7 +388,7 @@ CairoMakie.hidexdecorations!(ax2, ticks = false)
 CairoMakie.lines!(ax2, daily, 1000 .* S ./ ρ, label = "Model z")
 CairoMakie.scatter!(
     ax2,
-    seconds[snow_data_avail] ./ 24 ./ 3600,
+    seconds[mass_data_avail] ./ 24 ./ 3600,
     FT.(depths),
     label = "Data z",
     color = :red,
@@ -412,7 +412,7 @@ CairoMakie.lines!(
 )
 CairoMakie.scatter!(
     ax3,
-    seconds[snow_data_avail] ./ 24 ./ 3600,
+    seconds[mass_data_avail] ./ 24 ./ 3600,
     FT.(T_snow) .+ 273.15,
     label = "Data",
     color = :red,
