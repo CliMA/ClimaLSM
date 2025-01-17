@@ -103,25 +103,39 @@ function ClimaLand.surface_specific_humidity(
     p,
     T_sfc,
     ρ_sfc,
-)
-    thermo_params =
-        LP.thermodynamic_parameters(model.parameters.earth_param_set)
-    qsat_over_ice =
-        Thermodynamics.q_vap_saturation_generic.(
-            Ref(thermo_params),
-            T_sfc,
-            ρ_sfc,
-            Ref(Thermodynamics.Ice()),
-        )
-    qsat_over_liq =
-        Thermodynamics.q_vap_saturation_generic.(
-            Ref(thermo_params),
-            T_sfc,
-            ρ_sfc,
-            Ref(Thermodynamics.Liquid()),
-        )
-    q_l = p.snow.q_l
-    return @. qsat_over_ice * (1 - q_l) + q_l * (qsat_over_liq)
+    )
+    return p.snow.q_sfc
+end
+
+"""
+    snow_surface_specific_humidity(T_sfc::FT, q_l::FT, atmos_ts, parameters) where {FT}
+ 
+Computes the snow surface specific humidity at a point, assuming a weighted averaged (by mass fraction)
+of the saturated specific humidity over ice and over liquid, at temperature T_sfc.
+
+This approximates the surface air density using an adiabatic approximation and the current atmospheric state.
+"""
+function snow_surface_specific_humidity(
+    T_sfc::FT,
+    q_l::FT,
+    atmos_ts,
+    parameters,
+) where {FT}
+    thermo_params = LP.thermodynamic_parameters(parameters.earth_param_set)
+    ρ_sfc = compute_ρ_sfc(thermo_params, atmos_ts, T_sfc)
+    qsat_over_ice = Thermodynamics.q_vap_saturation_generic(
+        thermo_params,
+        T_sfc,
+        ρ_sfc,
+        Thermodynamics.Ice(),
+    )
+    qsat_over_liq = Thermodynamics.q_vap_saturation_generic(
+        thermo_params,
+        T_sfc,
+        ρ_sfc,
+        Thermodynamics.Liquid(),
+    )
+    return qsat_over_ice * (1 - q_l) + q_l * (qsat_over_liq)
 end
 
 
@@ -251,7 +265,7 @@ function maximum_liquid_mass_fraction(
     if T > _T_freeze
         return FT(0)
     else
-        parameters.θ_r * _ρ_l / ρ_snow
+        return parameters.θ_r * _ρ_l / ρ_snow
     end
 end
 
@@ -387,21 +401,6 @@ function energy_from_T_and_swe(S::FT, T::FT, parameters) where {FT}
 
 end
 
-"""
-    update_density!(density::AbstractDensityModel, params::SnowParameters, Y, p)
-
-Updates the snow density given the current model state. Default for all model types,
-can be extended for alternative density paramterizations.
-"""
-function update_density!(
-    density::AbstractDensityModel,
-    params::SnowParameters,
-    Y,
-    p,
-)
-    p.snow.ρ_snow .=
-        snow_bulk_density.(Y.snow.S, snow_depth(density, Y, p, params), params)
-end
 
 """
     update_density!(density::ConstantDryDensityModel, params::SnowParameters, Y, p)
