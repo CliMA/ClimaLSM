@@ -18,6 +18,7 @@ export AbstractAtmosphericDrivers,
     PrescribedAtmosphere,
     PrescribedPrecipitation,
     PrescribedSoilOrganicCarbon,
+    PrescribedSOCInputs,
     CoupledAtmosphere,
     PrescribedRadiativeFluxes,
     CoupledRadiativeFluxes,
@@ -94,6 +95,23 @@ end
 
 PrescribedSoilOrganicCarbon{FT}(soc) where {FT} =
     PrescribedSoilOrganicCarbon{FT, typeof(soc)}(soc)
+
+
+"""
+     PrescribedSOCInputs{FT}
+
+A type for prescribing soil organic carbon inputs into our disordered kinetics model.
+$(DocStringExtensions.FIELDS)
+"""
+struct PrescribedSOCInputs{FT, SOC_input <: AbstractTimeVaryingInput} <:
+       AbstractClimaLandDrivers{FT}
+    "Soil organic carbon input, function of time and space: kg C/m^2/yr"
+    soc_input::SOC_input
+end
+
+PrescribedSOCInputs{FT}(soc_input) where {FT} =
+    PrescribedSoilOrganicCarbon{FT, typeof(soc_input)}(soc_input)
+
 
 """
     PrescribedAtmosphere{FT, CA, DT} <: AbstractAtmosphericDrivers{FT}
