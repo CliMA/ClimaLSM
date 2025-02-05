@@ -421,7 +421,7 @@ end
 setup_and_solve_problem(; greet = true);
 # read in diagnostics and make some plots!
 #### ClimaAnalysis ####
-short_names = ["gpp", "swc", "et", "ct"]
+short_names = ["gpp", "swc", "et", "tsfc"]
 include(
     joinpath(
         pkgdir(ClimaLand),

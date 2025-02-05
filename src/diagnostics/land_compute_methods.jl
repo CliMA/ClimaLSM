@@ -232,6 +232,7 @@ end # Convert from kg C to mol CO2.
 @diagnostic_compute "lw_up" Union{SoilCanopyModel, LandModel} p.LW_u
 @diagnostic_compute "sw_up" Union{SoilCanopyModel, LandModel} p.SW_u
 @diagnostic_compute "surface_runoff" Union{SoilCanopyModel, LandModel} p.soil.R_s
+@diagnostic_compute "surface_temperature" Union{SoilCanopyModel, LandModel} p.T_sfc
 
 function compute_evapotranspiration!(
     out,

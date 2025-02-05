@@ -492,7 +492,7 @@ for (group_id, group) in
     CairoMakie.save(joinpath(root_path, "$(group_name).png"), fig)
 end
 
-short_names = ["gpp", "swc", "et", "ct", "swe", "si"]
+short_names = ["gpp", "swc", "et", "tsfc", "swe", "si"]
 
 include(
     joinpath(

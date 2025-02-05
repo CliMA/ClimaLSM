@@ -174,11 +174,12 @@ function default_diagnostics(
             "shf",
             "ghf",
             "salb",
+            "tsfc",
         ]
     elseif output_vars == :short
         soilcanopy_diagnostics = [
             "gpp",
-            "ct",
+            "tsfc",
             "lai",
             "sco2",
             "swc",
@@ -323,11 +324,12 @@ function default_diagnostics(
             "lhf",
             "shf",
             "ghf",
+            "tsfc",
         ]
     elseif output_vars == :short
         snowyland_diagnostics = [
             "gpp",
-            "ct",
+            "tsfc",
             "lai",
             "sco2",
             "swc",
