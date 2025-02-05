@@ -62,7 +62,7 @@ function setup_prob(t0, tf, Δt; outdir = outdir, nelements = (10, 10, 15))
     earth_param_set = LP.LandParameters(FT)
     radius = FT(6378.1e3)
     depth = FT(50)
-    center_long, center_lat = FT(-117.59736), FT(34.23375)
+    center_long, center_lat = FT(135), FT(44)
     delta_m = FT(200_000) # in meters, this is about a 2 degree simulation
     domain = ClimaLand.Domains.HybridBox(;
         xlim = (delta_m, delta_m),
@@ -396,13 +396,22 @@ function setup_prob(t0, tf, Δt; outdir = outdir, nelements = (10, 10, 15))
 
     nancheck_freq = Dates.Month(1)
     nancheck_cb = ClimaLand.NaNCheckCallback(nancheck_freq, start_date, t0, Δt)
-    return prob, SciMLBase.CallbackSet(driver_cb, diag_cb, nancheck_cb)
+
+    saveat = Array(t0:Δt:tf)
+    sv = (;
+        t = Array{Float64}(undef, length(saveat)),
+        saveval = Array{NamedTuple}(undef, length(saveat)),
+    )
+    saving_cb = ClimaLand.NonInterpSavingCallback(sv, saveat)
+
+    return prob,
+    SciMLBase.CallbackSet(driver_cb, diag_cb, nancheck_cb, saving_cb)
 end
 
 function setup_and_solve_problem(; greet = false)
 
     t0 = 0.0
-    tf = 60 * 60.0 * 24 * 365
+    tf = 60 * 60.0 * 24 * 7
     Δt = 450.0
     nelements = (10, 10, 15)
     if greet
@@ -431,7 +440,7 @@ setup_and_solve_problem(; greet = true);
 # read in diagnostics and make some plots!
 #### ClimaAnalysis ####
 simdir = ClimaAnalysis.SimDir(outdir)
-short_names = ["gpp", "ct", "swc", "si"]
+short_names = ["gpp", "ct", "swc", "si", "sco2"]
 mktempdir(root_path) do tmpdir
     for short_name in short_names
         var = get(simdir; short_name)
