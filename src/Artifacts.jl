@@ -318,7 +318,16 @@ function ceres_albedo_dataset_path(; context = nothing)
 end
 
 neural_snow_znetwork_link() =
-    "https://caltech.box.com/shared/static/ay7cv0rhuiytrqbongpeq2y7m3cimhm4.bson"
+    "https://caltech.box.com/shared/static/dbpax7lnabknt0vhefbxl87p0ib238gf.txt"
+
+neural_snow_swenetwork_link() =
+    "https://caltech.box.com/shared/static/nb2y4puindm5ncr7eldqk6l1q49lzi12.txt"
+
+neural_snow_training_data_link() =
+    "https://caltech.box.com/shared/static/1gfyh71c44ljzb9xbnza3lbzj6p9723x.csv"
+
+neural_snow_testing_data_link() =
+    "https://caltech.box.com/shared/static/qb2ze1wcc1a37fgt5k9wsj27gpoh39ax.csv"
 
 """
     ilamb_dataset_path(filename; context = nothing)

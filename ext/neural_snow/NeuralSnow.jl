@@ -13,7 +13,7 @@ import ClimaLand.Snow:
 import ClimaLand.Parameters as LP
 using Thermodynamics
 
-using HTTP, Flux, BSON
+using Flux
 include("./ModelTools.jl")
 using .ModelTools
 
@@ -41,32 +41,10 @@ Note that because we are loading a pre-trained model, the number of features inp
 """
 function get_znetwork()
     download_link = ClimaLand.Artifacts.neural_snow_znetwork_link()
-    z_idx = 1
-    p_idx = 7
-    nfeatures = 7
-    zmodel = ModelTools.make_model(nfeatures, 4, z_idx, p_idx)
-    zmodel_state = BSON.load(IOBuffer(HTTP.get(download_link).body))[:zstate]
-    Flux.loadmodel!(zmodel, zmodel_state) #Return to this to deterine how to load model for Flux v0.15 and above
+    zmodel = ModelTools.make_model_paper()
+    ModelTools.load_model_weights!(download_link, zmodel)
     ModelTools.settimescale!(zmodel, 86400.0)
     return zmodel
-end
-
-"""
-    converted_model_type!(model::Flux.Chain, FT::Type)
-A wrapper function to aid conversion of the utilized Flux network weights to the type determined by the simulation.
-Currently supports `Float32` and `Float64` types.
-"""
-function converted_model_type(model::Flux.Chain, FT::DataType)
-    if FT == Float32
-        return Flux.f32(model)
-    elseif FT == Float64
-        return Flux.f64(model)
-    else
-        error(
-            "Conversion of Flux Chain weights to the desired float-type is not supported. Please implement the desired conversion
-      in NeuralSnow.convert_model_type!() or a custom constructor for the NeuralDepthModel with the desired type.",
-        )
-    end
 end
 
 """
@@ -90,9 +68,9 @@ function NeuralDepthModel(
     α::Union{AbstractFloat, Nothing} = nothing,
 )
     usemodel = isnothing(model) ? get_znetwork() : model
-    usemodel = converted_model_type(usemodel, FT)
+    usemodel = ModelTools.convert_model!(usemodel, FT)
     weight = !isnothing(α) ? FT(α) : FT(2 / 86400)
-    if !isnothing(Δt) & !isnothing(model)
+    if !isnothing(Δt) & isnothing(model)
         ModelTools.settimescale!(usemodel, Δt, dtype = FT) #assumes Δt is provided in seconds
         if (Δt > 43200) & (isnothing(α))
             error("Please supply a weight for the
@@ -119,7 +97,7 @@ ClimaLand.Snow.density_prog_names(m::NeuralDepthModel) =
 Updates the snow density and depth in place given the current model state. Default for all model types,
 can be extended for alternative density parameterizations.
 """
-function update_density_and_depth!(
+function ClimaLand.Snow.update_density_and_depth!(
     ρ_snow,
     z_snow,
     density::NeuralDepthModel,
@@ -149,6 +127,10 @@ function eval_nn(
 )::FT where {FT}
     #model() of a Vector{FT} returns a 1-element Matrix, return the internal value: 
     return density.z_model([z, swe, qrel, R, u, T, P])[1]
+    #If we had a way to map shaped clima-fields to flattened vectors and reverse-map
+    #flattened vectors back to shaped clima-fields, we could increase the model
+    #performance by evlauating it over the whole grid at once, instead of once per-point.
+    #this is a question to return to another time.
 end
 
 """
@@ -162,7 +144,7 @@ function update_dzdt!(dzdt, density::NeuralDepthModel, Y)
         eval_nn.(
             Ref(density),
             Y.snow.Z,
-            Y.snow.S, # When snow-cover-fraction variable is implemented, make sure this value changes to the right input
+            Y.snow.S, # How to make this work with snow-cover fraction so we do not divide by zero but no allocations?
             Y.snow.P_avg,
             Y.snow.T_avg,
             Y.snow.R_avg,
@@ -201,7 +183,7 @@ end
 Updates all prognostic variables associated with density/depth given the current model state and the `NeuralDepthModel`
 density paramterization.
 """
-function update_density_prog!(
+function ClimaLand.Snow.update_density_prog!(
     density::NeuralDepthModel,
     model::SnowModel,
     dY,

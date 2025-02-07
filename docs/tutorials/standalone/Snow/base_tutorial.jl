@@ -59,8 +59,8 @@ code_dir = joinpath(pkgdir(ClimaLand), "docs/tutorials/standalone/Snow")
 include(joinpath(code_dir, "display_tools.jl"));
 
 # Next, we set up values of the network hyperparameters, including the
-# number of epochs to train it, as well as the width parameter ``n`` as outlined
-# in the associated parameter, and the two loss function hyperparameters ``n_1``, ``n_2``.
+# width parameter ``n`` as outlined
+# in the associated [paper](https://arxiv.org/abs/2412.06819), and the two loss function hyperparameters ``n_1``, ``n_2``.
 n = 4
 n1 = 2
 n2 = 4;
@@ -88,7 +88,8 @@ nfeatures = length(pred_vars)
 z_idx = 1
 p_idx = 7;
 
-# We next read in the already-cleaned training dataset, though for custom datasets
+# We next read in the already-cleaned [training](https://caltech.box.com/v/neuralsnow-training-data)
+# and [testing](https://caltech.box.com/v/neuralsnow-testing-data) datasets, though for custom datasets
 # there is plenty of functionality provided in the `DataTools` module
 # to scrape SNOTEL data directly. We also set the
 # unit timestep seen in this data (daily, so 1 day) to be used for
@@ -96,8 +97,9 @@ p_idx = 7;
 # To see the code that generated this data file, check out the [data tutorial](../data_tutorial/).
 # We also specify the maximum gap size in the data (in units of Δt) that the network can traverse
 # before requiring a reset, via `hole_thresh`.
-training_data_download_link = "https://caltech.box.com/shared/static/1gfyh71c44ljzb9xbnza3lbzj6p9723x.csv"
-testing_data_download_link = "https://caltech.box.com/shared/static/qb2ze1wcc1a37fgt5k9wsj27gpoh39ax.csv"
+training_data_download_link =
+    ClimaLand.Artifacts.neural_snow_training_data_link()
+testing_data_download_link = ClimaLand.Artifacts.neural_snow_testing_data_link()
 data_train = CSV.read(HTTP.get(training_data_download_link).body, DataFrame)
 valdata = CSV.read(HTTP.get(testing_data_download_link).body, DataFrame)
 Δt = Second(86400)
@@ -120,22 +122,61 @@ out_scale = maximum(abs.(usedata[!, target]))
 in_scales = std.(eachcol(select(usedata, pred_vars)))
 x_train, y_train = DataTools.make_data(usedata, pred_vars, target, out_scale);
 
-# We then create the model itself given the hyperparameters specified
-# above, and indicate which features are to be used to determine the
-# boundary constraints on the network, and return the trainable weights
-# for the overall model.
-model = ModelTools.make_model(nfeatures, n, z_idx, p_idx, in_scale = in_scales)
-ps = ModelTools.get_model_ps(model);
+# We then create the model itself: we can start by specifying upper and lower bounding
+# functions that enhance model stability and generalizability. Boundary
+# functions only take two inputs, `pred` and `input`, with the following considerations:
+# - `input` will be an `AbstractArray{<:AbstractFloat}` type (usually a `Matrix`), of size ``N\times K``, where ``N`` is the number of input features and ``K`` is the number of samples provided
+# - `pred` will also be an `AbstractArray{<:AbstractFloat}` type of size ``1 \times K``, where ``K`` is the number of predictions made from the provided inputs/samples
+# - the boundary functions must return a row-vector of size ``1\times K``, equal to the values of the boundary values for each input sample, or something that is readily broadcasted to this size (like a single scalar)
+# - for each given input, the upper boundary value should be greater than or equal to the lower boundary value
+# - anything beyond `pred` or `input` used in the function should be accessibly defined in the scope of the utilizing code
+# With this in mind, we pick an upper boundary value that leaves the prediction unchanged
+# if snowfall is present, but clamps the prediction to be nonpositive if no snowfall is present.
+# We pick a lower boundary boundary defining ``\frac{dz}{dt} \leq -z/Δt`` to prevent the
+# snowpack from ever becoming a negative value:
+upper_bound(pred, input) = @. (input[p_idx, :]' > 0) * relu(pred)
+lower_bound(pred, input) = -input[z_idx, :]' / Dates.value(Δt);
+
+# We then specify `Float32` as the `Float` type for the model (it will run faster
+# than `Float64`, and changing the model type is as simple as calling `convert_model!(model, T)`
+# for Float type `T`), and make the model using our boundary functions:
+FT = Float32
+model = ModelTools.make_model(
+    nfeatures,
+    n,
+    upper_bound,
+    lower_bound,
+    FT,
+    in_scale = in_scales,
+);
+
+# The above example shows how to build modles for a more general setup depending on your features, data, and model
+# needs, but for the same model
+# with the same boundary types as given in the paper, a predefined method `make_model_paper()` also exists
+# to instead get the same model used in the [paper](https://arxiv.org/abs/2412.06819), with additional speed optimizations and
+# the right hyperparameters and scalings already set. For this method, one only has to
+# indicate which input features are to be used to determine the boundary constraints on the network
+# (the values in this tutorial are the default values of the function, but one could pass alternative
+# values if working with different data or building custom models)
+model = ModelTools.make_model_paper(
+    depth_index = z_idx,
+    precipitation_index = p_idx,
+);
 
 # As training updates are better with the scaled data, we have to modify
 # the timescale and output scaling of the model structure prior to training.
-# This step is undone/reset after training is over.
+# This step is undone/reset after training is over. Note that the `settimescale!()`
+# function only works for models made with `make_model_paper()` and this would have
+# to be done manually otherwise. `setoutscale!()` will work for models made
+# with either of `make_model()` or `make_model_paper()`:
 ModelTools.settimescale!(model, Dates.value(Δt) * out_scale)
 ModelTools.setoutscale!(model, 1.0);
 
-# With that, training is as simple as calling the `trainmodel!` function:
+# For models made with `make_model()` or `make_model_paper()`, training
+# is as simple as calling the `trainmodel!` function, which makes use of 
+# our loss-function hyperparameters:
 print("\nTraining model!\n")
-ModelTools.trainmodel!(model, ps, x_train, y_train, n1, n2, verbose = true);
+ModelTools.trainmodel!(model, x_train, y_train, n1, n2, verbose = true);
 
 # To show the model's output on some of our training data in physically meaningful
 # units, we first reset the timesacle and output scaling constants. From there,
@@ -182,9 +223,24 @@ siteplot(
 );
 # ![](base_tutorial_plot2.png)
 
+# The `save_predictive_model_weights()` function can be used to write the
+# weights of a trained model to a text file. Weights written to such files
+# can be loaded into a network by first building the model structure with either
+# `make_model()` or `make_model_paper()`, and then loading the weights using the 
+# `load_model_weights!()` function, which takes a filepath or a hyperlink. For example, if you wanted to use the exact
+# model weights used for the [``z`` network](https://caltech.box.com/v/paper-model-z) or the
+# [``SWE`` network](https://caltech.box.com/v/paper-model-swe) in the paper, you can use the following:
+z_model_link = ClimaLand.Artifacts.neural_snow_znetwork_link()
+swe_model_link = ClimaLand.Artifacts.neural_snow_swenetwork_link()
+ModelTools.load_model_weights!(z_model_link, model);
+# However, note the SWE model has a different structure with `n=5`, and must
+# be built correctly with the correct arguments in `make_model_paper()` in order to 
+# correctly load the right weights.
+
 # Additional functionality can be explored through the [optional arguments](https://github.com/CliMA/ClimaLand.jl/blob/main/ext/neural_snow/ModelTools.jl)
 # to the developed functions, though creating timeseries for any validation
-# dataset can be handled with a similar call to `make_timeseries`. The timestep
+# dataset can be handled with a similar call to `make_timeseries` (or 
+# `paired_timeseries` for a ``z`` and ``SWE`` network). The timestep
 # `Δt` (as well as a matching call to the network with `settimescale!`) can
 # also be changed to different values to evaluate the network's capability on
 # validation data with different temporal resolutions, without the need

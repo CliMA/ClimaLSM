@@ -210,6 +210,24 @@ if !isnothing(DataToolsExt)
     end
 
     @testset "Testing Model Utilities" begin
+        mulmat = Float32.([1 1 1; 2 2 2; 3 3 3])
+        test_layer = ModelTools.MulLayer(mulmat)
+        @test test_layer.W == mulmat
+        @test test_layer([1.0f0; 2.0f0; 3.0f0]) == [6.0f0, 12.0f0, 18.0f0]
+        test_upper_bound(pred, input) = 2
+        test_lower_bound(pred, input) = -1
+        test_connection(pred, input) = ModelTools.connection_optimized(
+            test_upper_bound,
+            test_lower_bound,
+            pred,
+            input,
+        )
+        test_pred = Float32.([1.0 3.0 -2.0])
+        test_inp = Float32.(ones(5, 3))
+        expected_out = Float32.([2 2 2; -1 -1 -1; test_pred])
+        test_out = test_connection(test_pred, test_inp)
+        @test size(test_out) == (3, 3)
+        @test test_out == expected_out
         nfeatures = 7
         n = 5
         pred_vars = [
@@ -221,29 +239,44 @@ if !isnothing(DataToolsExt)
             :air_temp_avg,
             :dprecipdt_snow,
         ]
+        FT = Float32
         z_idx = 1
         swe_idx = 2
         p_idx = 7
-        model = ModelTools.make_model(nfeatures, n, z_idx, p_idx)
-        ps = ModelTools.get_model_ps(model)
-        for item in ps
-            item[:] .= Float32(1.0)
+        test_paper_up(pred, input) =
+            ModelTools.paper_upper_bound(p_idx, pred, input)
+        test_paper_low(pred, input) =
+            ModelTools.paper_lower_bound(z_idx, pred, input)
+        model = ModelTools.make_model(
+            nfeatures,
+            n,
+            test_upper_bound,
+            test_lower_bound,
+            FT,
+        )
+        for item in [:l1, :l2, :l3]
+            model[:pred].layers[item].weight[:] .= Float32(1.0)
         end
-
+        @test eltype(model[:pred].layers[:l1].weight) == Float32
+        model64 = ModelTools.convert_model!(deepcopy(model), Float64)
+        @test eltype(model64[:pred].layers[:l1].weight) == Float64
         test_input = Matrix{Float32}(ones(nfeatures, 8))
-        @test model(test_input)[1] == 1968
+        test_output = model(test_input)
+        @test test_output[1] == 2
         @test size(model(test_input)) == (1, 8)
-        @test sum(length, ps) == nfeatures * (n * (2 * nfeatures + 1) + 2) + 1
-        ModelTools.setoutscale!(model, 0.5)
-        @test model[:final_scale].weight[3, 3] == 0.5
-        @test model(test_input)[1] == 984
+        @test size(model[:pred].layers[:l1].weight) ==
+              (n * nfeatures, nfeatures)
+        @test test_paper_up(test_output, test_input) == test_output
+        @test test_paper_low(test_output, test_input) == Float32.(ones(1, 8))
+        ModelTools.setoutscale!(model, 0.001)
+        @test model[:apply_relus].weight[5, 3] == -0.001f0
+        @test model(test_input)[1] ≈ 1.715 atol = 1e-6
         ModelTools.setoutscale!(model, 2.0)
-        @test model(test_input)[1] == 1968 #this tests clipping
         @test model(-test_input)[1] == 0.0
         ModelTools.settimescale!(model, 1968)
-        @test model[:final_scale].weight[2, 2] == Float32(1 / 1968)
+        @test model[:apply_relus].weight[2, 2] == Float32(1 / 1968)
         @test ModelTools.evaluate(model, Vector{Float32}(ones(nfeatures)))[1] ==
-              1968
+              2.0f0
 
         test_constants = [1.0, 2.0, 3.0, 4.0, 5.0]
         x = zeros(6, 5)
@@ -271,19 +304,15 @@ if !isnothing(DataToolsExt)
         @test typeof(test_loss_check(input_x, input_y)) == Float32
 
         data_download_link = "https://caltech.box.com/shared/static/1gfyh71c44ljzb9xbnza3lbzj6p9723x.csv"
-        modelz_download_link = "https://caltech.box.com/shared/static/ay7cv0rhuiytrqbongpeq2y7m3cimhm4.bson"
-        modelswe_download_link = "https://caltech.box.com/shared/static/fe3cghffl0vz3xlzi3jsg3sb2ptyxlai.bson"
+        modelz_download_link = "https://caltech.box.com/shared/static/dbpax7lnabknt0vhefbxl87p0ib238gf.txt"
+        modelswe_download_link = "https://caltech.box.com/shared/static/nb2y4puindm5ncr7eldqk6l1q49lzi12.txt"
         data = CSV.read(HTTP.get(data_download_link).body, DataFrame)
         data = data[data[!, :id] .== 1286, :]
         data = DataTools.prep_data(data)
-        zmodel = ModelTools.make_model(nfeatures, 4, z_idx, p_idx)
-        swemodel = ModelTools.make_model(nfeatures, 5, swe_idx, p_idx)
-        zmodel_state =
-            BSON.load(IOBuffer(HTTP.get(modelz_download_link).body))[:zstate]
-        swemodel_state =
-            BSON.load(IOBuffer(HTTP.get(modelswe_download_link).body))[:swestate]
-        Flux.loadmodel!(zmodel, zmodel_state)
-        Flux.loadmodel!(swemodel, swemodel_state)
+        zmodel = ModelTools.make_model_paper()
+        swemodel = ModelTools.make_model_paper(n = 5, depth_index = swe_idx)
+        ModelTools.load_model_weights!(modelz_download_link, zmodel)
+        ModelTools.load_model_weights!(modelswe_download_link, swemodel)
         ModelTools.settimescale!(zmodel, 86400.0)
         ModelTools.settimescale!(swemodel, 86400.0)
         pred_series, _, _ = ModelTools.make_timeseries(zmodel, data, Day(1))
@@ -309,7 +338,6 @@ if !isnothing(DataToolsExt)
         out_scale = maximum(abs.(data[!, :dzdt]))
         x_train, y_train =
             DataTools.make_data(data, pred_vars, :dzdt, out_scale)
-        ps = ModelTools.get_model_ps(zmodel)
         ModelTools.settimescale!(zmodel, 86400 * out_scale)
         ModelTools.setoutscale!(zmodel, 1.0)
         callback_check = [0.0]
@@ -319,7 +347,6 @@ if !isnothing(DataToolsExt)
         nepochs = 10
         ModelTools.trainmodel!(
             zmodel,
-            ps,
             x_train,
             y_train,
             2,
@@ -370,17 +397,12 @@ if !isnothing(DataToolsExt)
         #Test extension utilities
         z_model = NeuralSnow.get_znetwork()
         @test typeof(z_model) <: Flux.Chain
-        z32 = NeuralSnow.converted_model_type(z_model, FT)
-        @test eltype(z32[1].layers[1].weight) == FT
-        z64 = NeuralSnow.converted_model_type(z_model, Float64)
-        @test eltype(z64[1].layers[1].weight) == Float64
         dens_model1 = NeuralSnow.NeuralDepthModel(FT)
-        @test prod(Flux.params(dens_model1.z_model) .== Flux.params(z32))
         @test eltype(dens_model1.α) == FT
         test_alph = 3 / 86400
         dens_model2 = NeuralSnow.NeuralDepthModel(FT, α = test_alph, Δt = Δt)
         @test dens_model2.α == FT(test_alph)
-        @test dens_model2.z_model[:final_scale].weight[2, 2] == FT(1 / Δt)
+        @test dens_model2.z_model[:apply_relus].weight[2, 2] == FT(1 / Δt)
 
         parameters = SnowParameters{FT}(
             Δt;
@@ -396,7 +418,7 @@ if !isnothing(DataToolsExt)
         drivers = ClimaLand.get_drivers(model)
         Y, p, coords = ClimaLand.initialize(model)
         @test (Y.snow |> propertynames) ==
-              (:S, :U, :Z, :P_avg, :T_avg, :R_avg, :Qrel_avg, :u_avg)
+              (:S, :S_l, :U, :Z, :P_avg, :T_avg, :R_avg, :Qrel_avg, :u_avg)
 
         Y.snow.S .= FT(0.1)
         Y.snow.U .=
@@ -409,19 +431,17 @@ if !isnothing(DataToolsExt)
         set_initial_cache! = ClimaLand.make_set_initial_cache(model)
         t0 = FT(0.0)
         set_initial_cache!(p, Y, t0)
-        @test snow_depth(model.parameters.density, Y, p, parameters) == Y.snow.Z
 
-        output1 = NeuralSnow.eval_nn(
-            dens_model2.z_model,
-            FT.([0, 0, 0, 0, 0, 0, 0])...,
-        )
+        output1 = NeuralSnow.eval_nn(dens_model2, FT.([0, 0, 0, 0, 0, 0, 0])...)
 
         @test eltype(output1) == FT
         @test output1 == 0.0f0
 
         zerofield = similar(Y.snow.Z)
         zerofield .= FT(0)
-        @test NeuralSnow.dzdt(dens_model2, Y) == zerofield
+        checkfield = deepcopy(zerofield)
+        NeuralSnow.update_dzdt!(zerofield, dens_model2, Y)
+        @test checkfield == zerofield
 
         Z = FT(0.5)
         S = FT(0.1)
@@ -434,13 +454,20 @@ if !isnothing(DataToolsExt)
         @test NeuralSnow.clip_dZdt(S, Z, FT(-S / Δt), dzdt, Δt) ≈ FT(-Z / Δt)
 
         oldρ = p.snow.ρ_snow
-        Snow.update_density!(dens_model2, model.parameters, Y, p)
+        Snow.update_density_and_depth!(
+            p.snow.ρ_snow,
+            p.snow.z_snow,
+            dens_model2,
+            Y,
+            p,
+            model.parameters,
+        )
         @test p.snow.ρ_snow == oldρ
 
         dY = similar(Y)
         dswe_by_precip = 0.1
         Y.snow.P_avg .= FT(dswe_by_precip / Δt)
-        NeuralSnow.update_density_prog!(dens_model2, model, dY, Y, p)
+        Snow.update_density_prog!(dens_model2, model, dY, Y, p)
         @test parent(dY.snow.Z)[1] * Δt > dswe_by_precip
         new_dYP = FT(test_alph) .* (p.drivers.P_snow .- Y.snow.P_avg)
         @test dY.snow.P_avg == new_dYP
