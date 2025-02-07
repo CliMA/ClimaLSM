@@ -165,7 +165,7 @@ hydrus_40min = Float64.(hydrus[:, 7])
 hydrus_60min = Float64.(hydrus[:, 8])
 
 
-fig = CairoMakie.Figure(size = (600, 800), fontsize = 18)
+fig = CairoMakie.Figure(size = (600, 800), fontsize = 30)
 ax = CairoMakie.Axis(
     fig[1, 1],
     xlabel = "Volumetric Water Content",
@@ -174,13 +174,13 @@ ax = CairoMakie.Axis(
     ygridvisible = false,
     yticks = [-1.1, -1, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1],
 )
-lines!(ax, ϑ_l[1][:], z, label = "ClimaLand", color = "black")
-lines!(ax, ϑ_l[2][:], z, color = "blue")
-lines!(ax, ϑ_l[3][:], z, color = "green")
-lines!(ax, ϑ_l[4][:], z, color = "orange")
-lines!(ax, ϑ_l[5][:], z, color = "purple")
-lines!(ax, ϑ_l[6][:], z, color = "cyan")
-lines!(ax, ϑ_l[7][:], z, color = "brown")
+lines!(ax, ϑ_l[1][:], z, label = "ClimaLand", color = "black", linewidth=3)
+lines!(ax, ϑ_l[2][:], z, color = "blue", linewidth=3)
+lines!(ax, ϑ_l[3][:], z, color = "green", linewidth=3)
+lines!(ax, ϑ_l[4][:], z, color = "orange", linewidth=3)
+lines!(ax, ϑ_l[5][:], z, color = "purple", linewidth=3)
+lines!(ax, ϑ_l[6][:], z, color = "cyan", linewidth=3)
+lines!(ax, ϑ_l[7][:], z, color = "brown", linewidth=3)
 
 lines!(
     ax,
@@ -190,12 +190,12 @@ lines!(
     color = "black",
     linestyle = :dash,
 )
-lines!(ax, hydrus_8min, hydrus_z, color = "blue", linestyle = :dash)
-lines!(ax, hydrus_16min, hydrus_z, color = "green", linestyle = :dash)
-lines!(ax, hydrus_24min, hydrus_z, color = "orange", linestyle = :dash)
-lines!(ax, hydrus_32min, hydrus_z, color = "purple", linestyle = :dash)
-lines!(ax, hydrus_40min, hydrus_z, color = "cyan", linestyle = :dash)
-lines!(ax, hydrus_60min, hydrus_z, color = "brown", linestyle = :dash)
+lines!(ax, hydrus_8min, hydrus_z, color = "blue", linestyle = :dash, linewidth=3)
+lines!(ax, hydrus_16min, hydrus_z, color = "green", linestyle = :dash, linewidth=3)
+lines!(ax, hydrus_24min, hydrus_z, color = "orange", linestyle = :dash, linewidth=3)
+lines!(ax, hydrus_32min, hydrus_z, color = "purple", linestyle = :dash, linewidth=3)
+lines!(ax, hydrus_40min, hydrus_z, color = "cyan", linestyle = :dash, linewidth=3)
+lines!(ax, hydrus_60min, hydrus_z, color = "brown", linestyle = :dash, linewidth=3)
 
 scatter!(
     ax,
@@ -253,7 +253,7 @@ scatter!(
     label = "60 min",
     marker = :xcross,
 )
-axislegend(ax, position = :rb)
+axislegend(ax, position = :rb, framevisible=false)
 limits!(ax, 0, 0.7, -1.1, 0)
 
 CairoMakie.save("./sv62_alpha_2_inf_updated_data_climaland_moisturebc.png", fig)
