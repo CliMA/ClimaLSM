@@ -445,54 +445,82 @@ end
 setup_and_solve_problem(; greet = true);
 # read in diagnostics and make some plots!
 #### ClimaAnalysis ####
+# TODO remove hardcoding for manual iteration
+root_path = joinpath(pwd(), "snowy_land_longrun_gpu")
+!isdir(root_path) && mkdir(root_path)
+# outdir = "/scratch/clima/slurm-buildkite/climaland-long-runs/3057/climaland-long-runs/snowy_land_longrun_gpu/global_diagnostics/output_active/" # on clima
+outdir = "snowy_land_longrun_gpu/global_diagnostics/output_active" # on local
 simdir = ClimaAnalysis.SimDir(outdir)
+
 short_names_bio = ["gpp", "ct", "lai"]
 short_names_water = ["swc", "si", "sr", "swe"]
 short_names_other = ["swu", "lwu", "et"]
 group_names = ["bio", "water", "other"]
 months_id = [1, 4, 7, 10]
-for (group_id, group) in
-    enumerate([short_names_bio, short_names_water, short_names_other])
-    fig =
-        CairoMakie.Figure(size = (600 * length(months_id), 300 * length(group)))
-    for (var_id, short_name) in enumerate(group)
-        var = get(simdir; short_name)
-        times = ClimaAnalysis.times(var)
-        CairoMakie.Label(
-            fig[var_id, 0],
-            short_name,
-            tellheight = false,
-            tellwidth = false,
-            fontsize = 20,
-        )
-        for (t_id, t) in pairs(times[months_id])
-            layout = fig[var_id, t_id] = CairoMakie.GridLayout()
-            kwargs = ClimaAnalysis.has_altitude(var) ? Dict(:z => 1) : Dict()
-            ClimaAnalysis.Visualize.heatmap2D_on_globe!(
-                layout,
-                ClimaAnalysis.slice(var, time = t; kwargs...),
-                mask = ClimaAnalysis.Visualize.oceanmask(),
-                more_kwargs = Dict(
-                    :mask => ClimaAnalysis.Utils.kwargs(color = :white),
-                ),
-            )
-        end
-    end
-    months = Dates.monthname.(1:12) .|> x -> x[1:3]
-    for (idx, m_id) in enumerate(months_id)
-        CairoMakie.Label(
-            fig[0, idx],
-            months[m_id],
-            tellwidth = false,
-            fontsize = 20,
-        )
-    end
-    group_name = group_names[group_id]
+# for (group_id, group) in
+#     enumerate([short_names_bio, short_names_water, short_names_other])
+#     fig =
+#         CairoMakie.Figure(size = (600 * length(months_id), 300 * length(group)))
+#     for (var_id, short_name) in enumerate(group)
+#         var = get(simdir; short_name)
+#         times = ClimaAnalysis.times(var)
+#         CairoMakie.Label(
+#             fig[var_id, 0],
+#             short_name,
+#             tellheight = false,
+#             tellwidth = false,
+#             fontsize = 20,
+#         )
+#         for (t_id, t) in pairs(times[months_id])
+#             layout = fig[var_id, t_id] = CairoMakie.GridLayout()
+#             kwargs = ClimaAnalysis.has_altitude(var) ? Dict(:z => 1) : Dict()
+#             ClimaAnalysis.Visualize.heatmap2D_on_globe!(
+#                 layout,
+#                 ClimaAnalysis.slice(var, time = t; kwargs...),
+#                 mask = ClimaAnalysis.Visualize.oceanmask(),
+#                 more_kwargs = Dict(
+#                     :mask => ClimaAnalysis.Utils.kwargs(color = :white),
+#                 ),
+#             )
+#         end
+#     end
+#     months = Dates.monthname.(1:12) .|> x -> x[1:3]
+#     for (idx, m_id) in enumerate(months_id)
+#         CairoMakie.Label(
+#             fig[0, idx],
+#             months[m_id],
+#             tellwidth = false,
+#             fontsize = 20,
+#         )
+#     end
+#     group_name = group_names[group_id]
 
-    CairoMakie.save(joinpath(root_path, "$(group_name).png"), fig)
-end
+#     CairoMakie.save(joinpath(root_path, "$(group_name).png"), fig)
+# end
 
 short_names = ["gpp", "swc", "et", "ct", "swe", "si"]
+units_labels = Dict(
+    "gpp" => "(mol CO₂⋅m²/s)",
+    "swc" => "(m³/m³)",
+    "et" => "(kg/m²s)",
+    "ct" => "(K)",
+    "swe" => "(m)",
+    "si" => "(m³/m³)",
+)
+
+sim_var_units_labels = Dict(
+    "gpp" => "(g C/m²day)",
+    "lwu" => "", # TODO
+    "et" => "(mm/day)", # TODO check
+)
+title_stubs = Dict(
+    "gpp" => "Gross Primary Productivity",
+    "swc" => "Soil Water Content",
+    "et" => "Evapotranspiration",
+    "ct" => "Canopy Temperature",
+    "swe" => "Snow Water Equivalent",
+    "si" => "Soil Ice",
+)
 
 include(
     joinpath(
@@ -502,7 +530,14 @@ include(
         "figures_function.jl",
     ),
 )
-make_figures(root_path, outdir, short_names)
+make_figures(
+    root_path,
+    outdir,
+    short_names,
+    units_labels,
+    sim_var_units_labels,
+    title_stubs,
+)
 
 include("leaderboard/leaderboard.jl")
 diagnostics_folder_path = outdir
