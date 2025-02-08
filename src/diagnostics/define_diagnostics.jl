@@ -168,7 +168,7 @@ function define_diagnostics!(land_model)
         short_name = "ra",
         long_name = "Autotrophic Respiration",
         standard_name = "autotrophic_respiration",
-        units = "mol CO2 m^-2 s^-1",
+        units = "kg C m^-2 s^-1",
         comments = "The canopy autotrophic respiration, the sum of leaves, stems and roots respiration.",
         compute! = (out, Y, p, t) ->
             compute_autotrophic_respiration!(out, Y, p, t, land_model),
@@ -180,7 +180,7 @@ function define_diagnostics!(land_model)
         short_name = "gs",
         long_name = "Stomatal Conductance",
         standard_name = "stomatal_conductance",
-        units = "mol H2O m^-2 s^-1",
+        units = "mol H2O m^-2 s^-1", # do we want this in kg h2o?
         comments = "The conductance of leaves. This depends on stomatal opening. It varies with factors such as soil moisture or atmospheric water demand.",
         compute! = (out, Y, p, t) ->
             compute_stomatal_conductance!(out, Y, p, t, land_model),
@@ -308,10 +308,10 @@ function define_diagnostics!(land_model)
         short_name = "gpp",
         long_name = "Gross Primary Productivity",
         standard_name = "gross_primary_productivity",
-        units = "mol CO2 m^-2 s^-1",
-        comments = "Net photosynthesis (carbon assimilation) of the canopy. This is equivalent to leaf net assimilation scaled to the canopy level.",
+        units = "kg C m^-2 s^-1",
+        comments = "Gross photosynthesis (carbon assimilation) of the canopy.", # Discuss, is this net leaf assimilation scaled? therefore, is it gpp?
         compute! = (out, Y, p, t) ->
-            compute_photosynthesis_net_canopy!(out, Y, p, t, land_model),
+            compute_photosynthesis_gross_canopy!(out, Y, p, t, land_model),
     )
 
     # Leaf net photosynthesis
@@ -319,7 +319,7 @@ function define_diagnostics!(land_model)
         short_name = "an",
         long_name = "Leaf Net Photosynthesis",
         standard_name = "leaf_net_photosynthesis",
-        units = "mol CO2 m^-2 s^-1",
+        units = "kg C m^-2 s^-1",
         comments = "Net photosynthesis (carbon assimilation) of a leaf, computed for example by the Farquhar model.",
         compute! = (out, Y, p, t) ->
             compute_photosynthesis_net_leaf!(out, Y, p, t, land_model),
@@ -330,7 +330,7 @@ function define_diagnostics!(land_model)
         short_name = "rd",
         long_name = "Leaf Respiration",
         standard_name = "leaf_dark_respiration",
-        units = "mol CO2 m^-2 s^-1",
+        units = "kg C m^-2 s^-1",
         comments = "Leaf respiration, called dark respiration because usually measured in the abscence of radiation.",
         compute! = (out, Y, p, t) ->
             compute_respiration_leaf!(out, Y, p, t, land_model),
@@ -338,7 +338,7 @@ function define_diagnostics!(land_model)
 
     # Vcmax25
     add_diagnostic_variable!(
-        short_name = "vcmax25",
+        short_name = "vcmax25", # isn't this a parameter? why do we return it?
         long_name = "Vcmax25",
         standard_name = "vcmax25",
         units = "mol CO2 m^-2 s^-1",
@@ -352,7 +352,7 @@ function define_diagnostics!(land_model)
         short_name = "nir",
         long_name = "Near Infrared Radiation",
         standard_name = "near_infrared_radiation",
-        units = "mol photons m^-2 s^-1",
+        units = "mol photons m^-2 s^-1", # Do we want all radiation fluxes in W m-2?
         comments = "The amount of near infrared radiation reaching the canopy.",
         compute! = (out, Y, p, t) ->
             compute_near_infrared_radiation_down!(out, Y, p, t, land_model),
@@ -691,7 +691,7 @@ function define_diagnostics!(land_model)
         short_name = "hr",
         long_name = "Heterotrophic Respiration",
         standard_name = "heterotrophic_respiration",
-        units = "mol m^-2 s^-1",
+        units = "kg C m^-2 s^-1",
         comments = "The CO2 efflux at the soil surface due to microbial decomposition of soil organic matter. This is not necessarily equal to CO2 production by microbes, as co2 diffusion through the soil pores takes time.",
         compute! = (out, Y, p, t) ->
             compute_heterotrophic_respiration!(out, Y, p, t, land_model),
@@ -756,7 +756,7 @@ function define_diagnostics!(land_model)
         short_name = "er",
         long_name = "Ecosystem Respiration",
         standard_name = "ecosystem respiration",
-        units = "mol CO2 m^-2 s^-1",
+        units = "kg C m^-2 s^-1",
         comments = "Total respiration flux out of the surface.",
         compute! = (out, Y, p, t) ->
             compute_total_respiration!(out, Y, p, t, land_model),

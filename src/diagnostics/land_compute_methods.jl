@@ -74,7 +74,19 @@ end
 } p.canopy.sif.SIF
 
 # Canopy - Autotrophic respiration
-@diagnostic_compute "autotrophic_respiration" Union{SoilCanopyModel, LandModel} p.canopy.autotrophic_respiration.Ra
+function compute_autotrophic_respiration!(
+        out,
+        Y,
+        p,
+        t,
+        land_model::Union{SoilCanopyModel, LandModel},
+    )
+    if inothing(out)
+        return p.canopy.autotrophic_respiration.Ra ./ FT(83.26) # [3.664 kg CO2/ kg C] x [10^3 g CO2/ kg CO2] x [1 mol CO2/44.009 g CO2] = 83.26 mol CO2/kg C
+    else
+        out .= p.canopy.autotrophic_respiration.Ra ./ FT(83.26)
+    end
+end
 
 # Canopy - Conductance
 @diagnostic_compute "stomatal_conductance" Union{SoilCanopyModel, LandModel} p.canopy.conductance.gs
@@ -117,12 +129,47 @@ end
 @diagnostic_compute "stem_area_index" Union{SoilCanopyModel, LandModel} p.canopy.hydraulics.area_index.stem
 
 # Canopy - Photosynthesis
-@diagnostic_compute "photosynthesis_net_canopy" Union{
-    SoilCanopyModel,
-    LandModel,
-} p.canopy.photosynthesis.GPP
-@diagnostic_compute "photosynthesis_net_leaf" Union{SoilCanopyModel, LandModel} p.canopy.photosynthesis.An
-@diagnostic_compute "respiration_leaf" Union{SoilCanopyModel, LandModel} p.canopy.photosynthesis.Rd
+function compute_photosynthesis_gross_canopy!(
+    out,
+    Y,
+    p,
+    t,
+    land_model::Union{SoilCanopyModel, LandModel},
+)
+    if isnothing(out)
+        return p.canopy.photosynthesis.GPP ./ FT(83.26) # [3.664 kg CO2/ kg C] x [10^3 g CO2/ kg CO2] x [1 mol CO2/44.009 g CO2] = 83.26 mol CO2/kg C
+    else
+        out .= p.canopy.photosynthesis.GPP ./ FT(83.26) # [3.664 kg CO2/ kg C] x [10^3 g CO2/ kg CO2] x [1 mol CO2/44.009 g CO2] = 83.26 mol CO2/kg C
+    end
+end
+
+function compute_photosynthesis_net_leaf!(
+    out,
+    Y,
+    p,
+    t,
+    land_model::Union{SoilCanopyModel, LandModel},
+)
+    if isnothing(out)
+        return p.canopy.photosynthesis.An ./ FT(83.26) # [3.664 kg CO2/ kg C] x [10^3 g CO2/ kg CO2] x [1 mol CO2/44.009 g CO2] = 83.26 mol CO2/kg C
+    else
+        out .= p.canopy.photosynthesis.An ./ FT(83.26) # [3.664 kg CO2/ kg C] x [10^3 g CO2/ kg CO2] x [1 mol CO2/44.009 g CO2] = 83.26 mol CO2/kg C
+    end
+end
+
+function compute_respiration_leaf!(
+    out,
+    Y,
+    p,
+    t,
+    land_model::Union{SoilCanopyModel, LandModel},
+)
+    if isnothing(out)
+        return p.canopy.photosynthesis.Rd ./ FT(83.26) # [3.664 kg CO2/ kg C] x [10^3 g CO2/ kg CO2] x [1 mol CO2/44.009 g CO2] = 83.26 mol CO2/kg C
+    else
+        out .= p.canopy.photosynthesis.Rd ./ FT(83.26) # [3.664 kg CO2/ kg C] x [10^3 g CO2/ kg CO2] x [1 mol CO2/44.009 g CO2] = 83.26 mol CO2/kg C
+    end
+end
 @diagnostic_compute "vcmax25" Union{SoilCanopyModel, LandModel} p.canopy.photosynthesis.Vcmax25
 
 # Canopy - Radiative Transfer
@@ -208,22 +255,7 @@ end
 @diagnostic_compute "vapor_flux" Union{SoilCanopyModel, LandModel} p.soil.turbulent_fluxes.vapor_flux_liq # should add ice here
 
 # Soil - SoilCO2
-function compute_heterotrophic_respiration!(
-    out,
-    Y,
-    p,
-    t,
-    land_model::Union{SoilCanopyModel{FT}, LandModel{FT}},
-) where {FT}
-    if isnothing(out)
-        return p.soilco2.top_bc .* FT(83.26)
-    else
-        out .= p.soilco2.top_bc .* FT(83.26)
-    end
-end # Convert from kg C to mol CO2.
-# To convert from kg C to mol CO2, we need to multiply by:
-# [3.664 kg CO2/ kg C] x [10^3 g CO2/ kg CO2] x [1 mol CO2/44.009 g CO2] = 83.26 mol CO2/kg C
-
+@diagnostic_compute "heterotrophic_respiration" Union{SoilCanopyModel, LandModel} p.soilco2.top_bc
 @diagnostic_compute "soilco2_diffusivity" Union{SoilCanopyModel, LandModel} p.soilco2.D
 @diagnostic_compute "soilco2_source_microbe" Union{SoilCanopyModel, LandModel} p.soilco2.Sm
 
@@ -293,11 +325,11 @@ function compute_total_respiration!(
     land_model::Union{SoilCanopyModel{FT}, LandModel{FT}},
 ) where {FT}
     if isnothing(out)
-        return p.soilco2.top_bc .* FT(83.26) .+ # [3.664 kg CO2/ kg C] x [10^3 g CO2/ kg CO2] x [1 mol CO2/44.009 g CO2] = 83.26 mol CO2/kg C
-               p.canopy.autotrophic_respiration.Ra
+        return p.soilco2.top_bc .+
+               p.canopy.autotrophic_respiration.Ra ./ FT(83.26)
     else
         out .=
-            p.soilco2.top_bc .* FT(83.26) .+ p.canopy.autotrophic_respiration.Ra
+            p.soilco2.top_bc .+ p.canopy.autotrophic_respiration.Ra ./ FT(83.26)
     end
 end
 
