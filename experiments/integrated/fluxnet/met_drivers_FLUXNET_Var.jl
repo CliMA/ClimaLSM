@@ -39,8 +39,14 @@ labels = (
     :H,
     :LW_OUT,
     :SW_OUT,
-    :SWC,
-    :TS,
+    :SWC1,
+    :SWC2,
+    :SWC3,
+    :TS1,
+    :TS2,
+    :TS3,
+    :TS4,
+    :TS5,
     :CO2,
 )
 
@@ -61,7 +67,13 @@ collect_args = [
     ("LW_OUT", (x) -> x, "W/m^2")
     ("SW_OUT", (x) -> x, "W/m^2")
     ("SWC_F_MDS_1", (x) -> x ./ 100, "m^3/m^3")
+    ("SWC_F_MDS_2", (x) -> x ./ 100, "m^3/m^3")
+    ("SWC_F_MDS_3", (x) -> x ./ 100, "m^3/m^3")
     ("TS_F_MDS_1", (x) -> x .+ 273.15, "K")
+    ("TS_F_MDS_2", (x) -> x .+ 273.15, "K")
+    ("TS_F_MDS_3", (x) -> x .+ 273.15, "K")
+    ("TS_F_MDS_4", (x) -> x .+ 273.15, "K")
+    ("TS_F_MDS_5", (x) -> x .+ 273.15, "K")
     ("CO2_F_MDS", (x) -> x .* 1e-6, "mol")
 ]
 
@@ -198,9 +210,8 @@ radiation = ClimaLand.PrescribedRadiativeFluxes(
     FT,
     SW_IN,
     LW_IN,
-   ref_time;
+    ref_time,
     θs = zenith_angle,
-    earth_param_set = earth_param_set,
 )
 
 # Start and end dates of data in MODIS format

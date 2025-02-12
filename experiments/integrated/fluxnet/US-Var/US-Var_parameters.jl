@@ -37,17 +37,17 @@ soil_vg_α = FT(2.0) # inverse meters, Bonan Table 8.3
 z_0m_soil = FT(0.01)
 z_0b_soil = FT(0.01)
 soil_ϵ = FT(0.98)
-soil_α_PAR = FT(0.2)
-soil_α_NIR = FT(0.2)
+soil_α_PAR = FT(0.25)
+soil_α_NIR = FT(0.25)
 
 # TwoStreamModel parameters
 Ω = FT(1.0)
 ld = FT(0.5)
 G_Function = ConstantGFunction(ld)
-α_PAR_leaf = FT(0.11)
+α_PAR_leaf = FT(0.15)
 λ_γ_PAR = FT(5e-7)
 τ_PAR_leaf = FT(0.05)
-α_NIR_leaf = FT(0.35)
+α_NIR_leaf = FT(0.4)
 τ_NIR_leaf = FT(0.34)
 ϵ_canopy = FT(0.97)
 
@@ -77,5 +77,6 @@ retention_model = PlantHydraulics.LinearRetentionCurve{FT}(a)
 plant_ν = FT(8.93e-3)
 plant_S_s = FT(1e-2 * 0.0098) # m3/m3/MPa to m3/m3/m
 rooting_depth = FT(0.3) # based off of soil depth, Xu and Baldocchi
+
 z0_m = FT(0.13) * h_canopy
 z0_b = FT(0.1) * z0_m

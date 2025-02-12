@@ -10,7 +10,7 @@ n_stem = Int64(0)
 n_leaf = Int64(1)
 h_leaf = FT(0.5) # m, Xu and Baldocchi, 2003
 h_stem = FT(0) # m
-
+h_canopy = h_stem + h_leaf
 # TIME STEPPING:
 
 # Starting time:
