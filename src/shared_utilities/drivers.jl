@@ -436,7 +436,7 @@ Container for the prescribed radiation functions needed to drive land models in 
 
 Note that some models require the zenith angle AND diffuse fraction. This
 requires the thermodynamic parameters as well to compute. Therefore,
-you must either pass the optional zenith angle function argument and 
+you must either pass the optional zenith angle function argument and
 thermodynamic parameters, or pass neither.
 $(DocStringExtensions.FIELDS)
 """
@@ -765,16 +765,16 @@ end
     specific_humidity_from_dewpoint(dewpoint_temperature, temperature, air_pressure, earth_param_set)
 
 Estimates the specific humidity given the dewpoint temperature, temperature of the air
-in Kelvin, and air pressure in Pa, along with the ClimaLand earth_param_set. This is useful 
+in Kelvin, and air pressure in Pa, along with the ClimaLand earth_param_set. This is useful
 for creating the PrescribedAtmosphere - which needs specific humidity - from ERA5 reanalysis data.
 
 We first compute the relative humidity using the Magnus formula, then the saturated vapor pressure, and then
 we compute q from vapor pressure and saturated vapor pressure.
 
-For more information on the Magnus formula, see e.g. 
-Lawrence, Mark G. (1 February 2005). 
-"The Relationship between Relative Humidity and the Dewpoint Temperature in Moist Air: 
-A Simple Conversion and Applications". 
+For more information on the Magnus formula, see e.g.
+Lawrence, Mark G. (1 February 2005).
+"The Relationship between Relative Humidity and the Dewpoint Temperature in Moist Air:
+A Simple Conversion and Applications".
 Bulletin of the American Meteorological Society. 86 (2): 225–234.
 """
 function specific_humidity_from_dewpoint(
@@ -807,13 +807,13 @@ end
 """
     rh_from_dewpoint(Td_C, T_C)
 
-Returns the relative humidity given the dewpoint temperature in Celsius and the 
+Returns the relative humidity given the dewpoint temperature in Celsius and the
 air temperature in Celsius, using the Magnus formula.
 
-For more information on the Magnus formula, see e.g. 
-Lawrence, Mark G. (1 February 2005). 
-"The Relationship between Relative Humidity and the Dewpoint Temperature in Moist Air: 
-A Simple Conversion and Applications". 
+For more information on the Magnus formula, see e.g.
+Lawrence, Mark G. (1 February 2005).
+"The Relationship between Relative Humidity and the Dewpoint Temperature in Moist Air:
+A Simple Conversion and Applications".
 Bulletin of the American Meteorological Society. 86 (2): 225–234.
 """
 function rh_from_dewpoint(Td_C::FT, T_C::FT) where {FT <: Real}
@@ -876,8 +876,13 @@ function ClimaLand.initialize_drivers(
     a::CoupledAtmosphere{FT},
     coords,
 ) where {FT}
-    keys = (:P_liq, :P_snow)
-    types = ([FT for k in keys]...,)
+    keys = (:P_liq, :P_snow, :c_co2, :ρ, :q)
+    ρ_types =
+        NamedTuple{(:ρ_eff, :ρ_soil, :ρ_snow, :ρ_canopy), Tuple{FT, FT, FT, FT}}
+    q_types =
+        NamedTuple{(:q_eff, :q_soil, :q_snow, :q_canopy), Tuple{FT, FT, FT, FT}}
+
+    types = ([FT for k in keys[1:(end - 2)]]..., ρ_types, q_types)
     domain_names = ([:surface for k in keys]...,)
     model_name = :drivers
     # intialize_vars packages the variables as a named tuple,
@@ -1076,7 +1081,7 @@ end
                              time_interpolation_method = LinearInterpolation(PeriodicCalendar()),
                              regridder_type = :InterpolationsRegridder)
 
-A helper function which constructs the `PrescribedAtmosphere` and `PrescribedRadiativeFluxes` 
+A helper function which constructs the `PrescribedAtmosphere` and `PrescribedRadiativeFluxes`
 from a file path pointing to the ERA5 data in a netcdf file, the surface_space, the start date,
 and the earth_param_set.
 """

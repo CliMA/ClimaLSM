@@ -671,3 +671,23 @@ function ClimaLand.get_drivers(model::LandModel)
         model.soilco2.drivers.soc,
     )
 end
+
+function ClimaLand.surface_albedo(model::LandModel, Y, p)
+    component_fractions = get_component_fractions(model, p)
+    canopy_albedo =
+        surface_albedo(model.canopy, Y, p) .* component_fractions.canopy
+    snow_albedo = surface_albedo(model.snow, Y, p) .* component_fractions.snow
+    soil_albedo = surface_albedo(model.soil, Y, p) .* component_fractions.soil
+    return canopy_albedo .+ snow_albedo .+ soil_albedo
+end
+
+function get_component_fractions(land::LandModel, p)
+    snow_frac = p.snow.snow_cover_fraction
+    canopy_frac = p.canopy.hydraulics.area_index.leaf
+    soil_frac = 1 - snow_frac - canopy_frac
+    return NamedTuple{(:snow, :canopy, :soil)}((
+        snow_frac,
+        canopy_frac,
+        soil_frac,
+    ))
+end
