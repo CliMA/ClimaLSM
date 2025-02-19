@@ -491,14 +491,13 @@ conditions when a canopy and Soil CO2  model is also included, though only
 the presence of the canopy modifies the soil BC.
 """
 function soil_boundary_fluxes!(
-    bc::AtmosDrivenFluxBC{<:PrescribedAtmosphere, <:PrescribedRadiativeFluxes},
+    bc::AtmosDrivenFluxBC,
     prognostic_land_components::Val{(:canopy, :snow, :soil, :soilco2)},
     soil::EnergyHydrology{FT},
     Y,
     p,
     t,
 ) where {FT}
-    bc = soil.boundary_conditions.top
     turbulent_fluxes!(p.soil.turbulent_fluxes, bc.atmos, soil, Y, p, t)
     # influx = maximum possible rate of infiltration given precip, snowmelt, evaporation/condensation
     # but if this exceeds infiltration capacity of the soil, runoff will

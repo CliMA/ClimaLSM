@@ -195,7 +195,10 @@ struct CoupledRadiativeFluxes{FT} <: AbstractRadiativeDrivers{FT} end
 
 To be used when coupling to an atmosphere model.
 """
-struct CoupledAtmosphere{FT} <: AbstractAtmosphericDrivers{FT} end
+struct CoupledAtmosphere{FT, DT} <: AbstractAtmosphericDrivers{FT}
+    "Start date - the datetime corresponding to t=0 for the simulation" #TODO: move somewhere else
+    start_date::DT
+end
 
 """
     compute_ρ_sfc(thermo_params, ts_in, T_sfc)
@@ -424,7 +427,11 @@ function ClimaLand.turbulent_fluxes!(
     # coupler has done its thing behind the scenes already
     model_name = ClimaLand.name(model)
     model_cache = getproperty(p, model_name)
-    dest .= model_cache.turbulent_fluxes
+    if model_name == :canopy
+        dest .= model_cache.energy.turbulent_fluxes
+    else
+        dest .= model_cache.turbulent_fluxes
+    end
     return nothing
 end
 
@@ -869,20 +876,27 @@ end
     initialize_drivers(r::CoupledAtmosphere{FT}, coords) where {FT}
 
 Creates and returns a NamedTuple for the `CoupledAtmosphere` driver,
-with variables `P_liq`, and `P_snow`. This is intended to be used in coupled
+with variables `P_liq`, and `P_snow` TODO: fill remaining. This is intended to be used in coupled
 simulations with ClimaCoupler.jl
 """
 function ClimaLand.initialize_drivers(
     a::CoupledAtmosphere{FT},
     coords,
 ) where {FT}
-    keys = (:P_liq, :P_snow, :c_co2, :ρ, :q)
+    # diff from prescribed: no u, and has ρ. q also is component split
+    keys = (:P_liq, :P_snow, :c_co2, :T, :P, :ρ, :q, :thermal_state)
+    # TODO: Are the component humidities and densities used?
     ρ_types =
         NamedTuple{(:ρ_eff, :ρ_soil, :ρ_snow, :ρ_canopy), Tuple{FT, FT, FT, FT}}
     q_types =
         NamedTuple{(:q_eff, :q_soil, :q_snow, :q_canopy), Tuple{FT, FT, FT, FT}}
 
-    types = ([FT for k in keys[1:(end - 2)]]..., ρ_types, q_types)
+    types = (
+        [FT for k in keys[1:(end - 3)]]...,
+        ρ_types,
+        q_types,
+        Thermodynamics.PhaseEquil{FT},
+    )
     domain_names = ([:surface for k in keys]...,)
     model_name = :drivers
     # intialize_vars packages the variables as a named tuple,
@@ -894,7 +908,7 @@ function ClimaLand.initialize_drivers(
 end
 
 """
-    initialize_drivers(r::PrescribedRadiativeFluxes{FT}, coords) where {FT}
+    initialize_drivers(r::Union{PrescribedRadiativeFluxes{FT}, CoupledRadiativeFluxes{FT}}, coords) where {FT}
 
 Creates and returns a NamedTuple for the `PrescribedRadiativeFluxes` driver,
  with variables `SW_d`, `LW_d`, cosine of the zenith angle `θ_s`, and the diffuse fraction

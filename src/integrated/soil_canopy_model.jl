@@ -287,8 +287,6 @@ function lsm_radiant_energy_fluxes!(
     t,
 ) where {(FT)}
     canopy = land.canopy
-    canopy_bc = canopy.boundary_conditions
-    radiation = canopy_bc.radiation
     earth_param_set = canopy.parameters.earth_param_set
     _σ = LP.Stefan(earth_param_set)
     LW_d = p.drivers.LW_d
@@ -361,7 +359,7 @@ conditions when a canopy and Soil CO2  model is also included, though only
 the presence of the canopy modifies the soil BC.
 """
 function soil_boundary_fluxes!(
-    bc::AtmosDrivenFluxBC{<:PrescribedAtmosphere, <:PrescribedRadiativeFluxes},
+    bc::AtmosDrivenFluxBC,
     prognostic_land_components::Val{(:canopy, :soil, :soilco2)},
     soil::EnergyHydrology,
     Y,

@@ -39,7 +39,7 @@ function Canopy.canopy_radiant_energy_fluxes!(
     p::NamedTuple,
     s::Union{PrognosticGroundConditions, PrognosticSoilConditions},
     canopy,
-    radiation::PrescribedRadiativeFluxes,
+    radiation::AbstractRadiativeDrivers,
     earth_param_set::PSE,
     Y::ClimaCore.Fields.FieldVector,
     t,

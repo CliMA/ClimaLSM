@@ -386,27 +386,22 @@ This has been written so as to work with Differential Equations.jl.
 """
 function ClimaLand.make_update_aux(model::SoilCO2Model)
     # TODO: Should this return func depend on atmos driver type?
-    if model.drivers.atmos isa PrescribedAtmosphere
-        function update_aux!(p, Y, t)
-            params = model.parameters
-            z = model.domain.fields.z
-            T_soil = soil_temperature(model.drivers.met, p, Y, t, z)
-            θ_l = soil_moisture(model.drivers.met, p, Y, t, z)
-            Csom = p.drivers.soc
-            P_sfc = p.drivers.P
-            θ_w = θ_l
-            ν = model.drivers.met.ν
-            θ_a100 = model.drivers.met.θ_a100
-            b = model.drivers.met.b
 
-            p.soilco2.D .=
-                co2_diffusivity.(T_soil, θ_w, P_sfc, θ_a100, b, ν, params)
-            p.soilco2.Sm .= microbe_source.(T_soil, θ_l, Csom, ν, params)
-        end
-    elseif model.drivers.atmos isa CoupledAtmosphere
-        function update_aux!(p, Y, t)
-            update_aux!(p, Y, t, model)
-        end
+    function update_aux!(p, Y, t)
+        params = model.parameters
+        z = model.domain.fields.z
+        T_soil = soil_temperature(model.drivers.met, p, Y, t, z)
+        θ_l = soil_moisture(model.drivers.met, p, Y, t, z)
+        Csom = p.drivers.soc
+        P_sfc = p.drivers.P
+        θ_w = θ_l
+        ν = model.drivers.met.ν
+        θ_a100 = model.drivers.met.θ_a100
+        b = model.drivers.met.b
+
+        p.soilco2.D .=
+            co2_diffusivity.(T_soil, θ_w, P_sfc, θ_a100, b, ν, params)
+        p.soilco2.Sm .= microbe_source.(T_soil, θ_l, Csom, ν, params)
     end
     return update_aux!
 end
