@@ -883,9 +883,14 @@ function ClimaLand.initialize_drivers(
     a::CoupledAtmosphere{FT},
     coords,
 ) where {FT}
-    # diff from prescribed: no u, and has ρ. q also is component split
+    # TODO: drop thermal state, P, T, q, ρ (maybe).
+    # things that need to be changed to not have the above variables in driver cache:
+    #  the canopy update_aux uses q, P, T to calculate diffuse_frac. Get it from coupler
+    # canopy update aux also uses them for medlyn_term
+    # the canopy_temperature uses T from driver when using prescribedcanopytemp
+    # snow update_aux uses thermal state to calc q_sfc.
+    # compute_jacobian! ofr BigLeafEnergyModel uses P
     keys = (:P_liq, :P_snow, :c_co2, :T, :P, :ρ, :q, :thermal_state)
-    # TODO: Are the component humidities and densities used?
     ρ_types =
         NamedTuple{(:ρ_eff, :ρ_soil, :ρ_snow, :ρ_canopy), Tuple{FT, FT, FT, FT}}
     q_types =
@@ -908,7 +913,7 @@ function ClimaLand.initialize_drivers(
 end
 
 """
-    initialize_drivers(r::Union{PrescribedRadiativeFluxes{FT}, CoupledRadiativeFluxes{FT}}, coords) where {FT}
+    initialize_drivers(r::PrescribedRadiativeFluxes{FT}, coords) where {FT}
 
 Creates and returns a NamedTuple for the `PrescribedRadiativeFluxes` driver,
  with variables `SW_d`, `LW_d`, cosine of the zenith angle `θ_s`, and the diffuse fraction

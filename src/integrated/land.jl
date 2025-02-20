@@ -671,6 +671,7 @@ function ClimaLand.get_drivers(model::LandModel)
     )
 end
 
+# TODO: grab this from p.α_sfc, or just remove the func
 function ClimaLand.surface_albedo(model::LandModel, Y, p)
     component_fractions = get_component_fractions(model, p)
     canopy_albedo =

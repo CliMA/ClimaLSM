@@ -454,8 +454,6 @@ function ClimaLand.make_update_aux(
         K = p.canopy.radiative_transfer.K
         @. K = extinction_coeff(p.canopy.radiative_transfer.G, cosθs)
 
-
-
         compute_fractional_absorbances!(
             p,
             RT,
