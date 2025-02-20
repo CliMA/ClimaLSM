@@ -50,7 +50,7 @@ import NCDatasets
 using Poppler_jll: pdfunite
 
 const FT = Float64;
-time_interpolation_method = LinearInterpolation(PeriodicCalendar())
+time_interpolation_method = LinearInterpolation()
 context = ClimaComms.context()
 ClimaComms.init(context)
 device = ClimaComms.device()
@@ -90,11 +90,17 @@ function setup_prob(
     subsurface_space = domain.space.subsurface
 
     # Forcing data
-    era5_artifact_path =
-        ClimaLand.Artifacts.era5_land_forcing_data2008_folder_path(; context)
-    era5_ncdata_path = joinpath(era5_artifact_path, "era5_2008_1.0x1.0.nc")
+    # era5_artifact_path =
+    #     ClimaLand.Artifacts.era5_land_forcing_data2008_folder_path(; context)
+    era5_artifact_path = "/net/sampo/data1/era5/forty_yrs_era5_land_forcing_data/forty_yrs_era5_land_forcing_data_artifact"
+    era5_ncdata_paths = String[]
+    years = collect(string(i) for i in 2008:2018)
+    for year in years
+        push!(era5_ncdata_paths, joinpath(era5_artifact_path, "era5_$(year)_1.0x1.0.nc"))
+    end
+    # era5_ncdata_path = joinpath(era5_artifact_path, "era5_2008_1.0x1.0.nc")
     atmos, radiation = ClimaLand.prescribed_forcing_era5(
-        era5_ncdata_path,
+        era5_ncdata_paths,
         surface_space,
         start_date,
         earth_param_set,
@@ -255,10 +261,16 @@ function setup_prob(
     # Set up plant hydraulics
     modis_lai_artifact_path =
         ClimaLand.Artifacts.modis_lai_forcing_data2008_path(; context)
-    modis_lai_ncdata_path =
-        joinpath(modis_lai_artifact_path, "Yuan_et_al_2008_1x1.nc")
+
+    modis_lai_ncdata_paths = String[]
+    for year in years
+        push!(modis_lai_ncdata_paths, joinpath(modis_lai_artifact_path, "Yuan_et_al_$(year)_1x1.nc"))
+    end
+
+    # modis_lai_ncdata_path =
+        # joinpath(modis_lai_artifact_path, "Yuan_et_al_2008_1x1.nc")
     LAIfunction = ClimaLand.prescribed_lai_modis(
-        modis_lai_ncdata_path,
+        modis_lai_ncdata_paths,
         surface_space,
         start_date;
         time_interpolation_method = time_interpolation_method,
@@ -426,7 +438,7 @@ function setup_and_solve_problem(pc, a, Ksat_canopy, α; greet = false)
     hours = 60minutes # hours in seconds
     days = 24hours # days in seconds
     years = 366days # years in seconds - 366 to make sure we capture at least full years
-    tf = 1years # 2 years in seconds
+    tf = 10years # 2 years in seconds
     Δt = 450.0
     start_date = DateTime(2008)
     nelements = (101, 15)
