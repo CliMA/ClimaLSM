@@ -41,7 +41,7 @@ steps:
           - "snowy_land_longrun_gpu_alpha1/*pdf"
         agents:
           slurm_gpus: 1
-          slurm_time: 15:00:00
+          slurm_time: 24:00:00
         env:
           CLIMACOMMS_DEVICE: "CUDA"
 
@@ -53,7 +53,6 @@ steps:
           - "snowy_land_longrun_gpu_alpha2/*pdf"
         agents:
           slurm_gpus: 1
-          slurm_time: 15:00:00
+          slurm_time: 24:00:00
         env:
           CLIMACOMMS_DEVICE: "CUDA"
-
