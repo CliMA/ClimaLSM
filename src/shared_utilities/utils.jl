@@ -498,16 +498,18 @@ end
 
 Count the number of NaNs in the state, e.g. the FieldVector given by
 `sol.u[end]` after calling `solve`. This function is useful for
-debugging simulations to determine quantitatively if a simulation is stable.
+debugging simulations to determine quantitatively if a simulation is stable; this is only
+for use in non-column simulations.
 
 If this function is called on a FieldVector, it will recursively call itself
 on each Field in the FieldVector. If it is called on a Field, it will count
-the number of NaNs in the Field and produce a warning if any are found.
+the number of NaNs in the Field and produce a warning if any are found; this behavior
+is different for 2d and 3d fields, which is why we dispatch on the `space`.
 
 If a ClimaCore Field is provided as `mask`, the function will only count NaNs
 in the state variables where the mask is 1. This is intended to be used with
 the land/sea mask, to avoid counting NaNs over the ocean. Note this assumes
-the mask is 1 over land and 0 over ocean.
+the mask is 1 over land and 0 over ocean, and that the mask is a 2D field.
 
 The `verbose` argument toggles whether the function produces output when no
 NaNs are found.
@@ -530,10 +532,60 @@ function count_nans_state(
     mask = nothing,
     verbose = false,
 )
+    return count_nans_state(state, axes(state); mask = mask, verbose = verbose)
+end
+
+"""
+    count_nans_state(
+        state::ClimaCore.Fields.Field,
+        space::ClimaCore.Spaces.AbstractSpectralElementSpace;
+        mask = nothing,
+        verbose = false,
+    )
+
+Counts the NaNs in the field `state` where the `state is defined on a
+spectral element space.
+"""
+function count_nans_state(
+    state::ClimaCore.Fields.Field,
+    space::ClimaCore.Spaces.AbstractSpectralElementSpace;
+    mask = nothing,
+    verbose = false,
+)
     # Note: this code uses `parent`; this pattern should not be replicated
     num_nans =
         isnothing(mask) ? round(sum(isnan, parent(state))) :
         round(sum(isnan, parent(state)[Bool.(parent(mask))]; init = 0))
+    if isapprox(num_nans, 0)
+        verbose && @info "No NaNs found"
+    else
+        @warn "$num_nans NaNs found"
+    end
+    return nothing
+end
+
+"""
+    count_nans_state(
+        state::ClimaCore.Fields.Field,
+        space::ClimaCore.Spaces.ExtrudedFiniteDifferenceSpace;
+        mask = nothing,
+        verbose = false,
+    )
+
+Counts the NaNs in the surface level of the field `state`,
+ where the `state is defined on an extruded finite difference space.
+"""
+function count_nans_state(
+    state::ClimaCore.Fields.Field,
+    space::ClimaCore.Spaces.ExtrudedFiniteDifferenceSpace;
+    mask = nothing,
+    verbose = false,
+)
+    # Note: this code uses `parent`; this pattern should not be replicated
+    surface_state = ClimaLand.Domains.top_center_to_surface(state)
+    num_nans =
+        isnothing(mask) ? round(sum(isnan, parent(surface_state))) :
+        round(sum(isnan, parent(surface_state)[Bool.(parent(mask))]; init = 0))
     if isapprox(num_nans, 0)
         verbose && @info "No NaNs found"
     else
@@ -565,7 +617,8 @@ function NaNCheckCallback(
     nancheck_frequency::Union{AbstractFloat, Dates.Period},
     start_date,
     t_start,
-    dt,
+    dt;
+    mask = nothing,
 )
     # TODO: Move to a more general callback system. For the time being, we use
     # the ClimaDiagnostics one because it is flexible and it supports calendar
@@ -595,7 +648,7 @@ function NaNCheckCallback(
     cond = let schedule = schedule
         (u, t, integrator) -> schedule(integrator)
     end
-    affect! = (integrator) -> count_nans_state(integrator.u)
+    affect! = (integrator) -> count_nans_state(integrator.u; mask)
 
     SciMLBase.DiscreteCallback(cond, affect!)
 end

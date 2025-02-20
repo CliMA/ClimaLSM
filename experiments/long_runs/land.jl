@@ -371,9 +371,15 @@ function setup_prob(t0, tf, Δt; outdir = outdir, nelements = (101, 15))
     diag_cb = ClimaDiagnostics.DiagnosticsCallback(diagnostic_handler)
 
     driver_cb = ClimaLand.DriverUpdateCallback(updateat, updatefunc)
-
+    mask = ClimaLand.landsea_mask(surface_space)
     nancheck_freq = Dates.Month(1)
-    nancheck_cb = ClimaLand.NaNCheckCallback(nancheck_freq, start_date, t0, Δt)
+    nancheck_cb = ClimaLand.NaNCheckCallback(
+        nancheck_freq,
+        start_date,
+        t0,
+        Δt;
+        mask = mask,
+    )
     return prob, SciMLBase.CallbackSet(driver_cb, diag_cb, nancheck_cb)
 end
 

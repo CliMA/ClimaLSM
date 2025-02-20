@@ -1,3 +1,24 @@
+[landsea_mask_30arcseconds]
+git-tree-sha1 = "517c925535981f9d17ac9e7a65e2c35c3ce9597d"
+
+    [[landsea_mask_30arcseconds.download]]
+    sha256 = "11eaf6b7606056d198f3735f7b76ead76269cced186de78075f415101cf39088"
+    url = "https://caltech.box.com/shared/static/z013ay1k6oqofnw69bv5held9x374sux.gz"
+
+[landsea_mask_60arcseconds]
+git-tree-sha1 = "10ed7ec61def091c44545825cfb4d9599216c3c8"
+
+    [[landsea_mask_60arcseconds.download]]
+    sha256 = "eb88455a39a00bfadb77effbc31a4df561158c0ca1578476edb683d45e3c49da"
+    url = "https://caltech.box.com/shared/static/vivf36pih7e0ttahqarc2nd5jxb4q8jr.gz"
+
+[landsea_mask_1deg]
+git-tree-sha1 = "cbbc6b3752d9cb9b667ec33cfbeb46819f8db418"
+
+    [[landsea_mask_1deg.download]]
+    sha256 = "3722b553c2fdf28a6574aea2e0b167d16ab050f34e5969ada45625b3a3ecb6da"
+    url = "https://caltech.box.com/shared/static/b3u4dv0dsoswvqgp8y63bzj7awbhwztd.gz"
+    
 [soil_ic_2008_50m]
 git-tree-sha1 = "ffa52ae695b5962fde4bab21187cc015b8f34f65"
 
