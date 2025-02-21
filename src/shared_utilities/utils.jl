@@ -553,9 +553,12 @@ function count_nans_state(
     verbose = false,
 )
     # Note: this code uses `parent`; this pattern should not be replicated
-    num_nans =
-        isnothing(mask) ? round(sum(isnan, parent(state))) :
-        round(sum(isnan, parent(state)[Bool.(parent(mask))]; init = 0))
+    num_nans = 0
+    ClimaComms.allowscalar(ClimaComms.device()) do
+        num_nans =
+            isnothing(mask) ? round(sum(isnan, parent(state))) :
+            round(sum(isnan, parent(state)[Bool.(parent(mask))]; init = 0))
+    end
     if isapprox(num_nans, 0)
         verbose && @info "No NaNs found"
     else
@@ -583,9 +586,18 @@ function count_nans_state(
 )
     # Note: this code uses `parent`; this pattern should not be replicated
     surface_state = ClimaLand.Domains.top_center_to_surface(state)
-    num_nans =
-        isnothing(mask) ? round(sum(isnan, parent(surface_state))) :
-        round(sum(isnan, parent(surface_state)[Bool.(parent(mask))]; init = 0))
+    num_nans = 0
+    ClimaComms.allowscalar(ClimaComms.device()) do
+        num_nans =
+            isnothing(mask) ? round(sum(isnan, parent(surface_state))) :
+            round(
+                sum(
+                    isnan,
+                    parent(surface_state)[Bool.(parent(mask))];
+                    init = 0,
+                ),
+            )
+    end
     if isapprox(num_nans, 0)
         verbose && @info "No NaNs found"
     else
