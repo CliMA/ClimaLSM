@@ -70,9 +70,9 @@ Each PFT has a name and a list of parameters. The parameters are stored as
 NamedTuples mapping parameter names to values. The inner constructor checks to
 ensure all required parameters are defined for the PFT.
 """
-struct Pft
+struct Pft{NT <: NamedTuple}
     name::String
-    parameters::NamedTuple
+    parameters::NT
 
     # Inner constructor to verify all required parameters are defined
     function Pft(name, parameters)
@@ -82,7 +82,7 @@ struct Pft
                 error("PFT $name is missing parameter $param")
             end
         end
-        new(name, parameters)
+        new{typeof(parameters)}(name, parameters)
     end
 end
 

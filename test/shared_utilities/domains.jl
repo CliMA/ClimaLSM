@@ -59,7 +59,8 @@ FT = Float32
           ClimaCore.Spaces.CenterExtrudedFiniteDifferenceSpace
     @test typeof(shell.space.surface) <: ClimaCore.Spaces.SpectralElementSpace2D
     @test obtain_surface_space(shell.space.subsurface) == shell.space.surface
-    @test obtain_surface_domain(shell) == SphericalSurface{FT}(
+    @test obtain_surface_domain(shell) ==
+          SphericalSurface{FT, typeof((; surface = shell.space.surface))}(
         radius,
         n_elements_sphere[1],
         npoly_sphere,
@@ -129,7 +130,8 @@ FT = Float32
           ClimaCore.Spaces.CenterExtrudedFiniteDifferenceSpace
     @test typeof(box.space.surface) <: ClimaCore.Spaces.SpectralElementSpace2D
     @test obtain_surface_space(box.space.subsurface) == box.space.surface
-    @test obtain_surface_domain(box) == Plane{FT}(
+    @test obtain_surface_domain(box) ==
+          Plane{FT, typeof((; surface = box.space.surface))}(
         xlim,
         ylim,
         nothing,
@@ -242,7 +244,8 @@ FT = Float32
           ClimaCore.Spaces.SpectralElementSpace2D
     @test obtain_surface_space(longlat_box.space.subsurface) ==
           longlat_box.space.surface
-    @test obtain_surface_domain(longlat_box) == Plane{FT}(
+    @test obtain_surface_domain(longlat_box) ==
+          Plane{FT, typeof((; surface = longlat_box.space.surface))}(
         xlim_longlat,
         ylim_longlat,
         longlat,
@@ -283,7 +286,10 @@ FT = Float32
     @test obtain_surface_space(z_column.space.subsurface) ==
           z_column.space.surface
     @test obtain_surface_domain(z_column) ==
-          Point{FT}(zlim[2], (; surface = z_column.space.surface))
+          Point{FT, typeof((; surface = z_column.space.surface))}(
+        zlim[2],
+        (; surface = z_column.space.surface),
+    )
     z_column_stretch =
         Column(; zlim = zlim, nelements = 10, dz_tuple = FT.((0.3, 0.03)))
     column_coords = coordinates(z_column_stretch).subsurface
