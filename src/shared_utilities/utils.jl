@@ -363,8 +363,8 @@ values of `p` at various timesteps. The `saveiter` field allows us to
 allocate `saved_values` before the simulation and fill it during the run,
 rather than pushing to an initially empty structure.
 """
-mutable struct SavingAffect{saveatType}
-    saved_values::NamedTuple
+mutable struct SavingAffect{NT <: NamedTuple, saveatType}
+    saved_values::NT
     saveat::saveatType
     saveiter::Int
 end
