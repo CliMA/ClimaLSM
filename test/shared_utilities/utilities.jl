@@ -291,13 +291,15 @@ end
         Y,
     )
 
-    # Add some NaNs to the fields
+    # Add some NaNs to the fields.
+    # Note that we only check if NaNs are present in the surface field, since
+    # any NaN in the column will propagate to the surface within several timesteps.
     # Note: this code uses `parent` and scalar indexing,
     # which shouldn't be replicated outside of tests
     ClimaComms.allowscalar(ClimaComms.device()) do
-        parent(var1)[1] = NaN
-        parent(var2)[1] = NaN
-        parent(var2)[2] = NaN
+        parent(var1)[:, 1, 1, 1, 1] .= NaN
+        parent(var2)[:, 1, 1, 1, 1] .= NaN
+        parent(var2)[:, 2, 1, 1, 1] .= NaN
     end
 
     # Count and log the number of NaNs in the state (test verbose and non-verbose cases)
@@ -318,7 +320,9 @@ end
     ) ClimaLand.count_nans_state(Y)
 
     # Test with a mask
-    mask_zeros = Fields.zeros(space)
+    sfc_space = domain.space.surface
+
+    mask_zeros = Fields.zeros(sfc_space)
     @test_logs (:info, "Checking NaNs in var1") (:info, "No NaNs found") (
         :info,
         "Checking NaNs in fieldvec",
@@ -338,7 +342,7 @@ end
         mask = mask_zeros,
     )
 
-    mask_ones = Fields.ones(space)
+    mask_ones = Fields.ones(sfc_space)
     @test_logs (:info, "Checking NaNs in var1") (:warn, "1 NaNs found") (
         :info,
         "Checking NaNs in fieldvec",

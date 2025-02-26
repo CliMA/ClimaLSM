@@ -45,16 +45,6 @@ steps:
         env:
           CLIMACOMMS_DEVICE: "CUDA"
 
-      - label: ":seedling: Soil-Canopy"
-        command:
-          - julia --color=yes --project=.buildkite experiments/long_runs/land.jl
-        artifact_paths: "land_longrun_gpu/*pdf"
-        agents:
-          slurm_gpus: 1
-          slurm_time: 15:00:00
-        env:
-          CLIMACOMMS_DEVICE: "CUDA"
-
       - label: ":sunglasses: California regional simulation"
         command:
           - julia --color=yes --project=.buildkite experiments/long_runs/land_region.jl

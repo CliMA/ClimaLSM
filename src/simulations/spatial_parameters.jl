@@ -8,6 +8,59 @@ function mean(x::AbstractArray{T}) where {T}
     sum(x) / length(x)
 end
 
+apply_threshold(field, value) = field > value ? field : eltype(field)(0)
+
+"""
+    landsea_mask(
+        surface_space;
+        resolution = "60arcs",
+        threshold = 0.5,
+        regridder_type = :InterpolationsRegridder,
+        extrapolation_bc = (
+            Interpolations.Periodic(),
+            Interpolations.Flat(),
+            Interpolations.Flat(),
+        ),
+    )
+
+Reads in the default Clima 60arcsecond land/sea mask, regrids to the
+`surface_space`, and treats any point with a land fraction < threshold
+as ocean.
+
+A 1degree (resolution = "1deg") and 30arcsecond (resolution = "30arcs") mask
+are also available.
+"""
+function landsea_mask(
+    surface_space;
+    resolution = "60arcs",
+    threshold = 0.5,
+    regridder_type = :InterpolationsRegridder,
+    extrapolation_bc = (
+        Interpolations.Periodic(),
+        Interpolations.Flat(),
+        Interpolations.Flat(),
+    ),
+)
+    @assert (resolution == "60arcs") ||
+            (resolution == "30arcs") ||
+            (resolution == "1deg")
+    context = ClimaComms.context(surface_space)
+    filepath = ClimaLand.Artifacts.landseamask_file_path(;
+        resolution = resolution,
+        context = context,
+    )
+    mask = SpaceVaryingInput(
+        filepath,
+        "landsea",
+        surface_space;
+        regridder_type,
+        regridder_kwargs = (; extrapolation_bc,),
+    )
+    binary_mask = apply_threshold.(mask, threshold)
+    return binary_mask
+end
+
+
 """
     use_lowres_clm(space)
 
