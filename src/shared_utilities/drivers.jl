@@ -195,10 +195,7 @@ struct CoupledRadiativeFluxes{FT} <: AbstractRadiativeDrivers{FT} end
 
 To be used when coupling to an atmosphere model.
 """
-struct CoupledAtmosphere{FT, DT} <: AbstractAtmosphericDrivers{FT}
-    "Start date - the datetime corresponding to t=0 for the simulation" #TODO: move somewhere else
-    start_date::DT
-end
+struct CoupledAtmosphere{FT} <: AbstractAtmosphericDrivers{FT} end
 
 """
     compute_ρ_sfc(thermo_params, ts_in, T_sfc)
