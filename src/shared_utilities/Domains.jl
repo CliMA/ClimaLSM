@@ -583,7 +583,11 @@ function SphericalShell(;
     horzdomain = ClimaCore.Domains.SphereDomain(radius)
     horzmesh = ClimaCore.Meshes.EquiangularCubedSphere(horzdomain, nelements[1])
     horztopology = ClimaCore.Topologies.Topology2D(comms_ctx, horzmesh)
-    quad = ClimaCore.Spaces.Quadratures.GLL{npolynomial + 1}()
+    if npolynomial == 0
+        quad = ClimaCore.Spaces.Quadratures.GL{npolynomial + 1}()
+    else
+        quad = ClimaCore.Spaces.Quadratures.GLL{npolynomial + 1}()
+    end
     horzspace = ClimaCore.Spaces.SpectralElementSpace2D(horztopology, quad)
 
     subsurface_space = ClimaCore.Spaces.ExtrudedFiniteDifferenceSpace(
@@ -649,7 +653,11 @@ function SphericalSurface(;
     horzdomain = ClimaCore.Domains.SphereDomain(radius)
     horzmesh = Meshes.EquiangularCubedSphere(horzdomain, nelements)
     horztopology = Topologies.Topology2D(comms_ctx, horzmesh)
-    quad = Spaces.Quadratures.GLL{npolynomial + 1}()
+    if npolynomial == 0
+        quad = ClimaCore.Spaces.Quadratures.GL{npolynomial + 1}()
+    else
+        quad = ClimaCore.Spaces.Quadratures.GLL{npolynomial + 1}()
+    end
     horzspace = Spaces.SpectralElementSpace2D(horztopology, quad)
     space = (; surface = horzspace)
     return SphericalSurface{FT}(radius, nelements, npolynomial, space)

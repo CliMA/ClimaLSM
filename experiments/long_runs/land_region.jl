@@ -8,7 +8,7 @@
 
 # Simulation Setup
 # Number of spatial elements: 10x10 in horizontal, 15 in vertical
-# Soil depth: 50 m
+# Soil depth: 10 m
 # Simulation duration: 4 years
 # Timestep: 450 s
 # Timestepper: ARS111
@@ -61,7 +61,7 @@ outdir =
 function setup_prob(t0, tf, Δt; outdir = outdir, nelements = (10, 10, 15))
     earth_param_set = LP.LandParameters(FT)
     radius = FT(6378.1e3)
-    depth = FT(50)
+    depth = FT(10)
     center_long, center_lat = FT(-117.59736), FT(34.23375)
     delta_m = FT(200_000) # in meters, this is about a 2 degree simulation
     domain = ClimaLand.Domains.HybridBox(;
@@ -71,7 +71,7 @@ function setup_prob(t0, tf, Δt; outdir = outdir, nelements = (10, 10, 15))
         nelements = nelements,
         npolynomial = 1,
         longlat = (center_long, center_lat),
-        dz_tuple = FT.((10.0, 0.05)),
+        dz_tuple = FT.((2.0, 0.05)),
     )
     surface_space = domain.space.surface
     subsurface_space = domain.space.subsurface

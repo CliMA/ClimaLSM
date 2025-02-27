@@ -332,5 +332,6 @@ import .Diagnostics: default_diagnostics
 # Simulations
 include(joinpath("simulations", "spatial_parameters.jl"))
 include(joinpath("simulations", "initial_conditions.jl"))
+include(joinpath("simulations", "domains.jl"))
 
 end

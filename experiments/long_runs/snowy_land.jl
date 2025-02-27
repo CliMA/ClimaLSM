@@ -7,8 +7,8 @@
 # land/sea mask are not yet supported by ClimaCore.
 
 # Simulation Setup
-# Number of spatial elements: 101 in horizontal, 15 in vertical
-# Soil depth: 50 m
+# Number of spatial elements: 101 in horizontal, 10 in vertical
+# Soil depth: 10 m
 # Simulation duration: 730 d
 # Timestep: 450 s
 # Timestepper: ARS111
@@ -59,17 +59,9 @@ diagnostics_outdir = joinpath(root_path, "global_diagnostics")
 outdir =
     ClimaUtilities.OutputPathGenerator.generate_output_path(diagnostics_outdir)
 
-function setup_prob(t0, tf, Δt; outdir = outdir, nelements = (101, 15))
+function setup_prob(t0, tf, Δt; outdir = outdir, nelements = (101, 10))
     earth_param_set = LP.LandParameters(FT)
-    radius = FT(6378.1e3)
-    depth = FT(50)
-    domain = ClimaLand.Domains.SphericalShell(;
-        radius = radius,
-        depth = depth,
-        nelements = nelements,
-        npolynomial = 1,
-        dz_tuple = FT.((10.0, 0.05)),
-    )
+    domain = ClimaLand.global_domain(FT; nelements = nelements)
     surface_space = domain.space.surface
     subsurface_space = domain.space.subsurface
 

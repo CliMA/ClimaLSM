@@ -13,8 +13,8 @@
 
 # Simulation Setup
 # This simulation setup is taken from the richards_runoff.jl experiment.
-# Number of spatial elements: 101 in horizontal, 15 in vertical
-# Soil depth: 50 m
+# Number of spatial elements: 101 in horizontal, 10 in vertical
+# Soil depth: 10 m
 # Simulation duration: 7 days
 # Timestep: 1800 s (30 min)
 # Timestepper: ARS111
@@ -59,14 +59,9 @@ outdir = "richards_benchmark_$(device_suffix)"
 !ispath(outdir) && mkpath(outdir)
 
 function setup_prob(t0, tf, Δt; nelements = (101, 15))
-    soil_depth = FT(50)
-    domain = ClimaLand.Domains.SphericalShell(;
-        radius = FT(6.3781e6),
-        depth = soil_depth,
-        nelements = nelements,
-        npolynomial = 1,
-        dz_tuple = FT.((10.0, 0.1)),
-    )
+    dz_tuple = (2.0, 0.1)
+    domain =
+        ClimaLand.global_domain(FT; nelements = nelements, dz_tuple = dz_tuple)
     surface_space = domain.space.surface
     subsurface_space = domain.space.subsurface
 

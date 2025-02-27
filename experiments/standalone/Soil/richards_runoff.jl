@@ -31,15 +31,15 @@ outdir = generate_output_path(
 )
 !ispath(outdir) && mkpath(outdir)
 FT = Float64
-radius = FT(6378.1e3);
-depth = FT(50)
-domain = ClimaLand.Domains.SphericalShell(;
-    radius = radius,
-    depth = depth,
+dz_tuple = (2.0, 0.1)
+nelements = (101, 15)
+domain = ClimaLand.global_domain(
+    FT;
     nelements = (101, 15),
+    dz_tuple = dz_tuple,
     npolynomial = 1,
-    dz_tuple = FT.((10.0, 0.1)),
-);
+)
+
 surface_space = domain.space.surface
 subsurface_space = domain.space.subsurface
 spatially_varying_soil_params =

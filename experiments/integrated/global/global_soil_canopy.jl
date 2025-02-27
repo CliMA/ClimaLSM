@@ -36,16 +36,8 @@ device_suffix =
 
 FT = Float64
 earth_param_set = LP.LandParameters(FT)
-radius = FT(6378.1e3);
-depth = FT(50)
 nelements = (50, 10)
-domain = ClimaLand.Domains.SphericalShell(;
-    radius = radius,
-    depth = depth,
-    nelements = nelements,
-    npolynomial = 1,
-    dz_tuple = FT.((10.0, 0.1)),
-);
+domain = ClimaLand.global_domain(FT; nelements = nelements)
 surface_space = domain.space.surface
 subsurface_space = domain.space.subsurface
 
