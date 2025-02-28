@@ -56,6 +56,7 @@ pages = Any[
     "Tutorials" => tutorials,
     "Standalone models" => standalone_models,
     "Diagnostics" => diagnostics,
+    "Calibration" => "calibration.md",
     "Leaderboard" => "leaderboard/leaderboard.md",
     "Restarts" => "restarts.md",
     "Misc. utilities" => "shared_utilities.md",
