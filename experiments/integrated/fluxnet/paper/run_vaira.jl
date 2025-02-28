@@ -387,8 +387,9 @@ ax4 = Axis(
     xgridvisible = false,
     ygridvisible = false,
 )
-lines!(ax4, Array(1:1:12), SW_u_model_monthly, label = "Model", color = "blue")
-lines!(ax4, Array(1:1:12), SW_u_data_monthly, label = "Data", color = "orange")
+lines!(ax4, Array(1:1:12), SW_u_model_monthly, label = "Model", color = "blue", linewidth = 3)
+lines!(ax4, Array(1:1:12), SW_u_data_monthly, label = "Data", color = "orange", linewidth = 3)
+@show mean(abs.(SW_u_model_monthly .- SW_u_data_monthly))
 axislegend(ax4, position = :rt, framevisible=false)
 ax3 = Axis(
     fig[3, 1],
@@ -401,10 +402,11 @@ ax3 = Axis(
 )
 lines!(ax3, Array(1:1:12), SHF_model_monthly, label = "", color = "blue", linewidth = 3)
 lines!(ax3, Array(1:1:12), SHF_data_monthly, label = "", color = "orange", linewidth = 3)
+@show mean(abs.(SHF_model_monthly .- SHF_data_monthly))
 ax2 = Axis(
     fig[2, 1],
     xlabel = "",
-    ylabel = "L (W/m²)",
+    ylabel = "LE (W/m²)",
     xticks = 1:12,
     xticklabelsvisible = false,
     xgridvisible = false,
@@ -412,7 +414,7 @@ ax2 = Axis(
 )
 lines!(ax2, Array(1:1:12), LHF_model_monthly, label = "", color = "blue", linewidth = 3)
 lines!(ax2, Array(1:1:12), LHF_data_monthly, label = "", color = "orange", linewidth = 3)
-
+@show mean(abs.(LHF_model_monthly .- LHF_data_monthly))
 ax1 = Axis(
     fig[4, 1],
     xlabel = "Month of year",
@@ -439,7 +441,7 @@ ax1 = Axis(
 )
 lines!(ax1, Array(1:1:12), GPP_model_monthly, label = "", color = "blue", linewidth = 3)
 lines!(ax1, Array(1:1:12), GPP_data_monthly, label = "", color = "orange", linewidth = 3)
-
+@show mean(abs.(GPP_model_monthly .- GPP_data_monthly))
 CairoMakie.save(joinpath(savedir, "vaira_monthly.png"), fig)
 
 

@@ -212,6 +212,7 @@ radiation = ClimaLand.PrescribedRadiativeFluxes(
     LW_IN,
     ref_time,
     θs = zenith_angle,
+    earth_param_set = earth_param_set
 )
 
 # Start and end dates of data in MODIS format
