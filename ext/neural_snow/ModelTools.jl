@@ -77,7 +77,7 @@ Return the trainable weights for the developed neural model.
 - `model::Chain`: the neural model to be used.
 """
 function get_model_ps(model::Chain)
-    return Flux.params(Flux.params(model[:pred])[2:7])
+    return Flux.trainables(Flux.trainables(model[:pred])[2:7])
 end
 
 """

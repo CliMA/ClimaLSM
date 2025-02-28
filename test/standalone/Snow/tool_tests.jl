@@ -375,7 +375,9 @@ if !isnothing(DataToolsExt)
         z64 = NeuralSnow.converted_model_type(z_model, Float64)
         @test eltype(z64[1].layers[1].weight) == Float64
         dens_model1 = NeuralSnow.NeuralDepthModel(FT)
-        @test prod(Flux.params(dens_model1.z_model) .== Flux.params(z32))
+        @test prod(
+            Flux.trainables(dens_model1.z_model) .== Flux.trainables(z32),
+        )
         @test eltype(dens_model1.α) == FT
         test_alph = 3 / 86400
         dens_model2 = NeuralSnow.NeuralDepthModel(FT, α = test_alph, Δt = Δt)
