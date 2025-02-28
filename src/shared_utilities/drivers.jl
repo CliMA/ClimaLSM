@@ -424,7 +424,11 @@ function ClimaLand.turbulent_fluxes!(
     # coupler has done its thing behind the scenes already
     model_name = ClimaLand.name(model)
     model_cache = getproperty(p, model_name)
-    dest .= model_cache.turbulent_fluxes
+    if model_name == :canopy
+        dest .= model_cache.energy.turbulent_fluxes
+    else
+        dest .= model_cache.turbulent_fluxes
+    end
     return nothing
 end
 
@@ -436,7 +440,7 @@ Container for the prescribed radiation functions needed to drive land models in 
 
 Note that some models require the zenith angle AND diffuse fraction. This
 requires the thermodynamic parameters as well to compute. Therefore,
-you must either pass the optional zenith angle function argument and 
+you must either pass the optional zenith angle function argument and
 thermodynamic parameters, or pass neither.
 $(DocStringExtensions.FIELDS)
 """
@@ -765,16 +769,16 @@ end
     specific_humidity_from_dewpoint(dewpoint_temperature, temperature, air_pressure, earth_param_set)
 
 Estimates the specific humidity given the dewpoint temperature, temperature of the air
-in Kelvin, and air pressure in Pa, along with the ClimaLand earth_param_set. This is useful 
+in Kelvin, and air pressure in Pa, along with the ClimaLand earth_param_set. This is useful
 for creating the PrescribedAtmosphere - which needs specific humidity - from ERA5 reanalysis data.
 
 We first compute the relative humidity using the Magnus formula, then the saturated vapor pressure, and then
 we compute q from vapor pressure and saturated vapor pressure.
 
-For more information on the Magnus formula, see e.g. 
-Lawrence, Mark G. (1 February 2005). 
-"The Relationship between Relative Humidity and the Dewpoint Temperature in Moist Air: 
-A Simple Conversion and Applications". 
+For more information on the Magnus formula, see e.g.
+Lawrence, Mark G. (1 February 2005).
+"The Relationship between Relative Humidity and the Dewpoint Temperature in Moist Air:
+A Simple Conversion and Applications".
 Bulletin of the American Meteorological Society. 86 (2): 225–234.
 """
 function specific_humidity_from_dewpoint(
@@ -807,13 +811,13 @@ end
 """
     rh_from_dewpoint(Td_C, T_C)
 
-Returns the relative humidity given the dewpoint temperature in Celsius and the 
+Returns the relative humidity given the dewpoint temperature in Celsius and the
 air temperature in Celsius, using the Magnus formula.
 
-For more information on the Magnus formula, see e.g. 
-Lawrence, Mark G. (1 February 2005). 
-"The Relationship between Relative Humidity and the Dewpoint Temperature in Moist Air: 
-A Simple Conversion and Applications". 
+For more information on the Magnus formula, see e.g.
+Lawrence, Mark G. (1 February 2005).
+"The Relationship between Relative Humidity and the Dewpoint Temperature in Moist Air:
+A Simple Conversion and Applications".
 Bulletin of the American Meteorological Society. 86 (2): 225–234.
 """
 function rh_from_dewpoint(Td_C::FT, T_C::FT) where {FT <: Real}
@@ -866,36 +870,16 @@ function initialize_drivers(a::PrescribedPrecipitation{FT}, coords) where {FT}
 end
 
 """
-    initialize_drivers(r::CoupledAtmosphere{FT}, coords) where {FT}
+    initialize_drivers(r::AbstractRadiativeDrivers{FT}, coords) where {FT}
 
-Creates and returns a NamedTuple for the `CoupledAtmosphere` driver,
-with variables `P_liq`, and `P_snow`. This is intended to be used in coupled
-simulations with ClimaCoupler.jl
-"""
-function ClimaLand.initialize_drivers(
-    a::CoupledAtmosphere{FT},
-    coords,
-) where {FT}
-    keys = (:P_liq, :P_snow)
-    types = ([FT for k in keys]...,)
-    domain_names = ([:surface for k in keys]...,)
-    model_name = :drivers
-    # intialize_vars packages the variables as a named tuple,
-    # as part of a named tuple with `model_name` as the key.
-    # Here we just want the variable named tuple itself
-    vars =
-        ClimaLand.initialize_vars(keys, types, domain_names, coords, model_name)
-    return vars.drivers
-end
+Creates and returns a NamedTuple for the radiative fluxes driver,
+with variables `SW_d`, `LW_d`, cosine of the zenith angle `cosθs`, and the
+diffuse fraction of shortwave radiation `frac_diff`.
 
+We require the same variables for both prescribed and coupled radiative drivers,
+so we can use the same function for both of them.
 """
-    initialize_drivers(r::PrescribedRadiativeFluxes{FT}, coords) where {FT}
-
-Creates and returns a NamedTuple for the `PrescribedRadiativeFluxes` driver,
- with variables `SW_d`, `LW_d`, cosine of the zenith angle `θ_s`, and the diffuse fraction
-of shortwave radiation `frac_diff`.
-"""
-function initialize_drivers(r::PrescribedRadiativeFluxes{FT}, coords) where {FT}
+function initialize_drivers(r::AbstractRadiativeDrivers{FT}, coords) where {FT}
     keys = (:SW_d, :LW_d, :cosθs, :frac_diff)
     types = ([FT for k in keys]...,)
     domain_names = ([:surface for k in keys]...,)
@@ -921,6 +905,30 @@ function initialize_drivers(
     keys = (:soc,)
     types = (FT,)
     domain_names = (:subsurface,)
+    model_name = :drivers
+    # intialize_vars packages the variables as a named tuple,
+    # as part of a named tuple with `model_name` as the key.
+    # Here we just want the variable named tuple itself
+    vars =
+        ClimaLand.initialize_vars(keys, types, domain_names, coords, model_name)
+    return vars.drivers
+end
+
+"""
+    initialize_drivers(r::CoupledAtmosphere{FT}, coords) where {FT}
+
+Creates and returns a NamedTuple for the `CoupledAtmosphere` driver,
+with variables `P_liq`, `P_snow`, `c_co2`, `T`, `P`, and `q`.
+
+This is intended to be used in coupled simulations with ClimaCoupler.jl
+"""
+function ClimaLand.initialize_drivers(
+    a::CoupledAtmosphere{FT},
+    coords,
+) where {FT}
+    keys = (:P_liq, :P_snow, :c_co2, :T, :P, :q)
+    types = ([FT for k in keys]...,)
+    domain_names = ([:surface for k in keys]...,)
     model_name = :drivers
     # intialize_vars packages the variables as a named tuple,
     # as part of a named tuple with `model_name` as the key.
@@ -1076,7 +1084,7 @@ end
                              time_interpolation_method = LinearInterpolation(PeriodicCalendar()),
                              regridder_type = :InterpolationsRegridder)
 
-A helper function which constructs the `PrescribedAtmosphere` and `PrescribedRadiativeFluxes` 
+A helper function which constructs the `PrescribedAtmosphere` and `PrescribedRadiativeFluxes`
 from a file path pointing to the ERA5 data in a netcdf file, the surface_space, the start date,
 and the earth_param_set.
 """

@@ -808,7 +808,7 @@ Here, the soil boundary fluxes are computed as if the soil is run
 in standalone mode.
 """
 function soil_boundary_fluxes!(
-    bc::AtmosDrivenFluxBC{<:PrescribedAtmosphere, <:PrescribedRadiativeFluxes},
+    bc::AtmosDrivenFluxBC,
     prognostic_land_components::Val{(:soil,)},
     model::EnergyHydrology,
     Y,

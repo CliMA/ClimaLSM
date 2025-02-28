@@ -285,7 +285,7 @@ struct SoilDrivers{
     FT,
     MET <: AbstractSoilDriver,
     SOC <: PrescribedSoilOrganicCarbon{FT},
-    ATM <: PrescribedAtmosphere{FT},
+    ATM <: Union{PrescribedAtmosphere{FT}, CoupledAtmosphere{FT}},
 }
     "Soil temperature and moisture drivers - Prescribed or Prognostic"
     met::MET
@@ -385,6 +385,8 @@ variables `p.soil.variable` in place.
 This has been written so as to work with Differential Equations.jl.
 """
 function ClimaLand.make_update_aux(model::SoilCO2Model)
+    # TODO: Should this return func depend on atmos driver type?
+
     function update_aux!(p, Y, t)
         params = model.parameters
         z = model.domain.fields.z

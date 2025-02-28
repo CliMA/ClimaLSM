@@ -354,6 +354,7 @@ function ClimaLand.make_update_aux(model::SnowModel{FT}) where {FT}
 
         @. p.snow.T_sfc = snow_surface_temperature(p.snow.T)
 
+        # TODO: (not discussed) this should happen outside and maybe do nothing while coupled (coupler will set this)
         @. p.snow.q_sfc = snow_surface_specific_humidity(
             p.snow.T_sfc,
             p.snow.q_l,

@@ -345,7 +345,7 @@ energy and water flux at the surface of the soil for use as boundary
 conditions, taking into account the presence of snow on the surface.
 """
 function soil_boundary_fluxes!(
-    bc::AtmosDrivenFluxBC{<:PrescribedAtmosphere, <:PrescribedRadiativeFluxes},
+    bc::AtmosDrivenFluxBC,
     prognostic_land_components::Val{(:snow, :soil)},
     soil::EnergyHydrology,
     Y,
