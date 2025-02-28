@@ -2,10 +2,16 @@
     define_diagnostics!(land_model)
 
 Calls `add_diagnostic_variable!` for all available variables specializing the
-compute function for `land_model`.
+compute function for `land_model`. `ALL_DIAGNOSTICS` is emptied before adding diagnostic
+variables.
 """
 function define_diagnostics!(land_model)
-
+    # clear `ALL_DIAGNOSTICS` to prevent each call to `add_diagnostic_variable!` from warning
+    # about overwriting the same diagnostic variable
+    if length(ALL_DIAGNOSTICS) > 0
+        @warn "Clearing the `ALL_DIAGNOSTICS` dictionary"
+        empty!(ALL_DIAGNOSTICS)
+    end
     ### BucketModel ###
 
     ## Stored in p (diagnostics variables stored in the cache) ##

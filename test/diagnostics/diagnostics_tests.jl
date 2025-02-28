@@ -88,7 +88,9 @@ prob = SciMLBase.ODEProblem(
 
 # ClimaDiagnostics
 
-ClimaLand.Diagnostics.define_diagnostics!(model)
+@test_logs (:warn, "Clearing the `ALL_DIAGNOSTICS` dictionary") ClimaLand.Diagnostics.define_diagnostics!(
+    model,
+)
 diags = ["rn", "lhf"]
 
 tmpdir = mktempdir(".")
