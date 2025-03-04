@@ -141,3 +141,6 @@ git-tree-sha1 = "4cc329093b0dbc3443db36e7c01133267ac94d37"
     [[bedrock_depth_60arcseconds.download]]
     sha256 = "6eb359e900141de837c41c0082257f7cf082e06e1371d45b07b1078f07e96c53"
     url = "https://caltech.box.com/shared/static/k1zq0w1psqu8dk0s9jotrfuu6hm8kxfp.gz"
+
+[forty_yrs_era5_land_forcing_data]
+git-tree-sha1 = "f269a0b057b9f438b4caafdef17da73746310787"
