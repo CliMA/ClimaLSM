@@ -22,7 +22,7 @@ import ClimaTimeSteppers as CTS
 using ClimaCore
 using ClimaUtilities.ClimaArtifacts
 import ClimaUtilities.OnlineLogging: WallTimeInfo, report_walltime
-import ClimaUtilities.TimeManager: ITime
+import ClimaUtilities.TimeManager: ITime, date
 
 import ClimaDiagnostics
 import ClimaAnalysis
@@ -50,7 +50,14 @@ import NCDatasets
 using Poppler_jll: pdfunite
 
 const FT = Float64;
-time_interpolation_method = LinearInterpolation(PeriodicCalendar())
+# If you want to do a very long run locally, you can do `export LONG_RUN="true"`
+# in the terminal and run this script. If you want to do a very long run on
+# Buildkite manually, then make a new build and pass `LONG_RUN="true"` as an
+# environment variable.
+const LONG_RUN =
+    (haskey(ENV, "LONG_RUN") && ENV["LONG_RUN"] == "true") ? true : false
+time_interpolation_method =
+    LONG_RUN ? LinearInterpolation() : LinearInterpolation(PeriodicCalendar())
 context = ClimaComms.context()
 ClimaComms.init(context)
 device = ClimaComms.device()
@@ -74,9 +81,19 @@ function setup_prob(
     subsurface_space = domain.space.subsurface
 
     # Forcing data
-    era5_artifact_path =
-        ClimaLand.Artifacts.era5_land_forcing_data2008_folder_path(; context)
-    era5_ncdata_path = joinpath(era5_artifact_path, "era5_2008_1.0x1.0.nc")
+    if LONG_RUN
+        era5_ncdata_path = ClimaLand.Artifacts.find_era5_year_paths(
+            date(t0),
+            date(tf);
+            context,
+        )
+    else
+        era5_artifact_path =
+            ClimaLand.Artifacts.era5_land_forcing_data2008_folder_path(;
+                context,
+            )
+        era5_ncdata_path = joinpath(era5_artifact_path, "era5_2008_1.0x1.0.nc")
+    end
     atmos, radiation = ClimaLand.prescribed_forcing_era5(
         era5_ncdata_path,
         surface_space,
@@ -233,10 +250,18 @@ function setup_prob(
     photosynthesis_args =
         (; parameters = Canopy.FarquharParameters(FT, is_c3; Vcmax25 = Vcmax25))
     # Set up plant hydraulics
-    modis_lai_artifact_path =
-        ClimaLand.Artifacts.modis_lai_forcing_data2008_path(; context)
-    modis_lai_ncdata_path =
-        joinpath(modis_lai_artifact_path, "Yuan_et_al_2008_1x1.nc")
+    if LONG_RUN
+        modis_lai_ncdata_path = ClimaLand.Artifacts.find_modis_year_paths(
+            date(t0),
+            date(tf);
+            context,
+        )
+    else
+        modis_lai_artifact_path =
+            ClimaLand.Artifacts.modis_lai_forcing_data2008_path(; context)
+        modis_lai_ncdata_path =
+            joinpath(modis_lai_artifact_path, "Yuan_et_al_2008_1x1.nc")
+    end
     LAIfunction = ClimaLand.prescribed_lai_modis(
         modis_lai_ncdata_path,
         surface_space,
@@ -405,7 +430,8 @@ function setup_and_solve_problem(; greet = false)
     hours = 60minutes # hours in seconds
     days = 24hours # days in seconds
     years = 366days # years in seconds - 366 to make sure we capture at least full years
-    tf = 2years # 2 years in seconds
+    # 10 years in seconds for very long run and 2 years in seconds otherwise
+    tf = LONG_RUN ? 10years : 2years
     Δt = 450.0
     start_date = DateTime(2008)
     nelements = (101, 15)
