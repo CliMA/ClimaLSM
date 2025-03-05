@@ -9,7 +9,7 @@ using ArtifactWrappers
 """
     soil_ic_2008_50m_path(; context)
 
-Return the path to the file that contains the spun-up soil and snow initial 
+Return the path to the file that contains the spun-up soil and snow initial
 conditions for Jan 1, 2008.
 
 The soil domain has a depth of 50m; we have ensured that surface properties
@@ -56,6 +56,16 @@ Return the path to the directory that contains the ERA5 LAI covers.
 function era5_lai_covers_data_folder_path(; context = nothing)
     return @clima_artifact("era5_lai_covers", context)
 end
+
+#"""
+#    era5_surface_data_1979_2024_path(; context)
+#
+#Return the path to the folder that contains the ERA5 monthly surface data
+#from 1979 to 2024.
+#"""
+#function era5_surface_data_1979_2024_path(; context = nothing)
+#    return @clima_artifact("era5_monthly_averages_surface_single_level_1979_2024", context)
+#end
 
 """
     modis_lai_forcing_data2008_path(; context)
@@ -378,7 +388,7 @@ end
 
 Construct the file path for the 60arcsecond orography data NetCDF file.
 
-Downloads the 60arc-second dataset by default. 
+Downloads the 60arc-second dataset by default.
 """
 function earth_orography_file_path(; context = nothing)
     filename = "ETOPO_2022_v1_60s_N90W180_surface.nc"
@@ -393,7 +403,7 @@ end
 
 Construct the file path for the 60arcsecond bedrock depth data NetCDF file.
 
-Downloads the 60arc-second dataset by default. 
+Downloads the 60arc-second dataset by default.
 """
 function bedrock_depth_file_path(; context = nothing)
     filename = "ETOPO_2022_v1_60s_N90W180_bed.nc"
@@ -402,4 +412,13 @@ function bedrock_depth_file_path(; context = nothing)
         filename,
     )
 end
+end
+
+"""
+    era5_surface_data2008_path(; context)
+
+Return the path to the folder that contains the ERA5 monthly surface data
+"""
+function era5_surface_data2008_path(; context = nothing)
+    return @clima_artifact("era5_surface_fluxes", context)
 end
