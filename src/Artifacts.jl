@@ -1,5 +1,7 @@
 module Artifacts
 
+import Dates
+
 import ClimaUtilities.ClimaArtifacts: @clima_artifact
 
 import LazyArtifacts
@@ -20,6 +22,36 @@ function soil_ic_2008_50m_path(; context = nothing)
     return joinpath(dir, "soil_ic_2008_50m.nc")
 end
 
+"""
+    era5_land_forcing_data_forty_years_folder_path(; context = nothing)
+
+Return the path to the directory that contains the ERA5 forcing data for 2008.
+"""
+function era5_land_forcing_data_forty_years_folder_path(; context = nothing)
+    @clima_artifact("forty_yrs_era5_land_forcing_data", context)
+end
+
+"""
+    find_era5_year_paths(t0, tf, start_date, context = nothing)
+
+Find the appropriate files of ERA5 forcing data to run a simuation starting on
+`start_date` and ending on `final_date`.
+"""
+function find_era5_year_paths(start_date, final_date; context = nothing)
+    year0 = Dates.year(start_date)
+    yearf = Dates.year(final_date)
+    era5_forty_yrs_path =
+        era5_land_forcing_data_forty_years_folder_path(context = context)
+    years = collect(
+        joinpath(era5_forty_yrs_path, "era5_$(year)_1.0x1.0.nc") for
+        year in year0:yearf
+    )
+    for year in years
+        isfile(year) ||
+            "The file $year does not exist in the forty years of ERA5 forcing data artifact"
+    end
+    return years
+end
 
 """
     era5_land_forcing_data2008_path(; context, lowres=false)
@@ -65,6 +97,29 @@ the year 2008.
 """
 function modis_lai_forcing_data2008_path(; context = nothing)
     return @clima_artifact("modis_lai", context)
+end
+
+"""
+    find_modis_year_paths(start_date, final_date; context = nothing)
+
+Find the appropriate files of MODIS LAI data to run a simuation starting on
+`start_date` and ending on `final_date`.
+"""
+function find_modis_year_paths(start_date, final_date; context = nothing)
+    # Get the year of the start and final dates
+    year0 = Dates.year(start_date)
+    yearf = Dates.year(final_date)
+    modis_lai_forcing_data_path =
+        modis_lai_forcing_data2008_path(context = context)
+    years = collect(
+        joinpath(modis_lai_forcing_data_path, "Yuan_et_al_$(year)_1x1.nc")
+        for year in year0:yearf
+    )
+    for year in years
+        isfile(year) ||
+            "The file $year does not exist in the MODIS LAI artifact"
+    end
+    return years
 end
 
 """

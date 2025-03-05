@@ -31,6 +31,7 @@ steps:
   - wait
 
   - group: "Global Land Models"
+    if: build.env("LONG_RUN") == "false"
     steps:
 
       - label: ":snow_capped_mountain: Snowy Land"
@@ -84,3 +85,19 @@ steps:
           slurm_time: 00:30:00
         env:
           CLIMACOMMS_DEVICE: "CUDA"
+
+  - group: "Very long run of snowy land"
+    if: build.env("LONG_RUN") == "true"
+    steps:
+      - label: ":snow_capped_mountain: Snowy Land"
+        command:
+          - julia --color=yes --project=.buildkite experiments/long_runs/snowy_land.jl
+        artifact_paths:
+          - "snowy_land_longrun_gpu/*png"
+          - "snowy_land_longrun_gpu/*pdf"
+        agents:
+          slurm_gpus: 1
+          slurm_time: 24:00:00
+        env:
+          CLIMACOMMS_DEVICE: "CUDA"
+          LONG_RUN: "true"
