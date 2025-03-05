@@ -444,6 +444,7 @@ $(DocStringExtensions.FIELDS)
 struct PrescribedRadiativeFluxes{
     FT,
     SW <: Union{Nothing, AbstractTimeVaryingInput},
+    FD <: Union{Nothing, AbstractTimeVaryingInput},
     LW <: Union{Nothing, AbstractTimeVaryingInput},
     DT,
     T,
@@ -451,6 +452,8 @@ struct PrescribedRadiativeFluxes{
 } <: AbstractRadiativeDrivers{FT}
     "Downward shortwave radiation function of time (W/m^2): positive indicates towards surface"
     SW_d::SW
+    "Diffuse Fraction of shortwave radiation (unitless, [0,1])"
+    frac_diff::FD
     "Downward longwave radiation function of time (W/m^2): positive indicates towards surface"
     LW_d::LW
     "Start date - the datetime corresponding to t=0 for the simulation"
@@ -466,6 +469,7 @@ struct PrescribedRadiativeFluxes{
         start_date;
         θs = nothing,
         earth_param_set = nothing,
+        frac_diff = nothing,
     )
         if isnothing(earth_param_set)
             thermo_params = nothing
@@ -473,7 +477,7 @@ struct PrescribedRadiativeFluxes{
             thermo_params = LP.thermodynamic_parameters(earth_param_set)
         end
 
-        args = (SW_d, LW_d, start_date, θs, thermo_params)
+        args = (SW_d, frac_diff, LW_d, start_date, θs, thermo_params)
         return new{FT, typeof.(args)...}(args...)
     end
 end
@@ -1030,16 +1034,7 @@ function make_update_drivers(r::PrescribedRadiativeFluxes{FT}) where {FT}
         # If we obtain this factor from ERA5 in the future, we should remove thermo_params from the struct.
         if !isnothing(r.θs) & !isnothing(r.thermo_params)
             p.drivers.cosθs .= FT.(cos.(r.θs(t, r.start_date)))
-            @. p.drivers.frac_diff = diffuse_fraction(
-                t,
-                r.start_date,
-                p.drivers.T,
-                p.drivers.P,
-                p.drivers.q,
-                p.drivers.SW_d,
-                p.drivers.cosθs,
-                r.thermo_params,
-            )
+            update_frac_diff!(p, r, t)
         elseif isnothing(r.θs) & isnothing(r.thermo_params)
             # These should not be accessed or used. Set to NaN.
             p.drivers.cosθs .= FT(NaN)
@@ -1052,6 +1047,23 @@ function make_update_drivers(r::PrescribedRadiativeFluxes{FT}) where {FT}
     end
 
     return update_drivers!
+end
+
+function update_frac_diff!(p, r, t)
+    if typeof(r.frac_diff) <: AbstractTimeVaryingInput
+        evaluate!(p.drivers.frac_diff, r.frac_diff, t)
+    else
+        @. p.drivers.frac_diff = empirical_diffuse_fraction(
+            t,
+            r.start_date,
+            p.drivers.T,
+            p.drivers.P,
+            p.drivers.q,
+            p.drivers.SW_d,
+            p.drivers.cosθs,
+            r.thermo_params,
+        )
+    end
 end
 
 """
@@ -1102,7 +1114,7 @@ function prescribed_forcing_era5(
         regridder_type,
         file_reader_kwargs = (; preprocess_func = (data) -> -data / 1000,),
         method = time_interpolation_method,
-        compose_function = (mtpr, msr) -> mtpr - msr,
+        compose_function = (mtpr, msr) -> min.(mtpr .- msr, Float32(0)),
     )
     # Precip is provide as a mass flux; convert to volume flux of liquid water with ρ =1000 kg/m^3
     snow_precip = TimeVaryingInput(
@@ -1176,6 +1188,23 @@ function prescribed_forcing_era5(
         regridder_type,
         method = time_interpolation_method,
     )
+    function compute_diffuse_fraction(total, direct)
+        diff = max(total - direct, Float32(0))
+        return min(diff / (total + eps(Float32)), Float32(1))
+    end
+    function compute_diffuse_fraction_broadcasted(total, direct)
+        return @. compute_diffuse_fraction(total, direct)
+    end
+
+    frac_diff = TimeVaryingInput(
+        era5_ncdata_path,
+        ["msdwswrf", "msdrswrf"],
+        surface_space;
+        start_date,
+        regridder_type,
+        method = time_interpolation_method,
+        compose_function = compute_diffuse_fraction_broadcasted,
+    )
     LW_d = TimeVaryingInput(
         era5_ncdata_path,
         "msdwlwrf",
@@ -1225,6 +1254,7 @@ function prescribed_forcing_era5(
         start_date;
         θs = zenith_angle,
         earth_param_set = earth_param_set,
+        frac_diff = frac_diff,
     )
     return atmos, radiation
 end
@@ -1370,7 +1400,7 @@ end
 
 
 """
-    diffuse_fraction(td::FT, T::FT, P, q, SW_d::FT, cosθs::FT, thermo_params) where {FT}
+    empirical_diffuse_fraction(td::FT, T::FT, P, q, SW_d::FT, cosθs::FT, thermo_params) where {FT}
 
 Computes the fraction of diffuse radiation (`diff_frac`) as a function
 of the solar zenith angle (`θs`), the total surface downwelling shortwave radiation (`SW_d`),
@@ -1391,7 +1421,7 @@ can become large negative numbers.
 
 Because of that, we cap the returned value to lie within [0,1].
 """
-function diffuse_fraction(
+function empirical_diffuse_fraction(
     t,
     start_date,
     T::FT,

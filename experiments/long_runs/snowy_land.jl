@@ -55,7 +55,19 @@ context = ClimaComms.context()
 ClimaComms.init(context)
 device = ClimaComms.device()
 device_suffix = device isa ClimaComms.CPUSingleThreaded ? "cpu" : "gpu"
-root_path = "snowy_land_longrun_$(device_suffix)"
+
+if length(ARGS) < 5
+    @error("Please provide pc, a, Ksat_canopy, αsnow, name")
+end
+pc = parse(FT, ARGS[1])
+a = parse(FT, ARGS[2])#    a = FT(0.05 * 0.0098) # Holtzman's original parameter for the bulk modulus of elasticity
+# ψ = (S_l - 1)/a, ψ in m -> a has units of inverse meters
+# ψρg = (S_l-1)/a' where a'/ρg = a; a' = ρg a = 0.05 Mpa
+Ksat_canopy = parse(FT, ARGS[3])
+α = parse(FT, ARGS[4])
+name = ARGS[5]
+
+root_path = "snowy_land_longrun_$(device_suffix)_$(name)"
 diagnostics_outdir = joinpath(root_path, "global_diagnostics")
 outdir =
     ClimaUtilities.OutputPathGenerator.generate_output_path(diagnostics_outdir)
@@ -64,7 +76,11 @@ function setup_prob(
     t0,
     tf,
     Δt,
-    start_date;
+    start_date,
+    pc,
+    a,
+    Ksat_canopy,
+    α;
     outdir = outdir,
     nelements = (101, 15),
 )
@@ -151,12 +167,10 @@ function setup_prob(
     SAI = FT(0.0) # m2/m2
     f_root_to_shoot = FT(3.5)
     RAI = FT(1.0)
-    K_sat_plant = FT(5e-9) # m/s # seems much too small?
     ψ63 = FT(-4 / 0.0098) # / MPa to m, Holtzman's original parameter value is -4 MPa
     Weibull_param = FT(4) # unitless, Holtzman's original c param value
-    a = FT(0.05 * 0.0098) # Holtzman's original parameter for the bulk modulus of elasticity
     conductivity_model =
-        Canopy.PlantHydraulics.Weibull{FT}(K_sat_plant, ψ63, Weibull_param)
+        Canopy.PlantHydraulics.Weibull{FT}(Ksat_canopy, ψ63, Weibull_param)
     retention_model = Canopy.PlantHydraulics.LinearRetentionCurve{FT}(a)
     plant_ν = FT(1.44e-4)
     plant_S_s = FT(1e-2 * 0.0098) # m3/m3/MPa to m3/m3/m
@@ -230,8 +244,14 @@ function setup_prob(
     conductance_args =
         (; parameters = Canopy.MedlynConductanceParameters(FT; g1))
     # Set up photosynthesis
-    photosynthesis_args =
-        (; parameters = Canopy.FarquharParameters(FT, is_c3; Vcmax25 = Vcmax25))
+    photosynthesis_args = (;
+        parameters = Canopy.FarquharParameters(
+            FT,
+            is_c3;
+            Vcmax25 = Vcmax25,
+            pc = pc,
+        )
+    )
     # Set up plant hydraulics
     modis_lai_artifact_path =
         ClimaLand.Artifacts.modis_lai_forcing_data2008_path(; context)
@@ -287,7 +307,8 @@ function setup_prob(
     )
 
     # Snow model
-    snow_parameters = SnowParameters{FT}(Δt; earth_param_set = earth_param_set)
+    snow_parameters =
+        SnowParameters{FT}(Δt; earth_param_set = earth_param_set, α_snow = α)
     snow_args = (;
         parameters = snow_parameters,
         domain = ClimaLand.obtain_surface_domain(domain),
@@ -397,7 +418,7 @@ function setup_prob(
     SciMLBase.CallbackSet(driver_cb, diag_cb, report_cb, nancheck_cb)
 end
 
-function setup_and_solve_problem(; greet = false)
+function setup_and_solve_problem(pc, a, Ksat_canopy, α; greet = false)
 
     t0 = 0.0
     seconds = 1.0
@@ -405,7 +426,7 @@ function setup_and_solve_problem(; greet = false)
     hours = 60minutes # hours in seconds
     days = 24hours # days in seconds
     years = 366days # years in seconds - 366 to make sure we capture at least full years
-    tf = 2years # 2 years in seconds
+    tf = 1years # 2 years in seconds
     Δt = 450.0
     start_date = DateTime(2008)
     nelements = (101, 15)
@@ -420,7 +441,8 @@ function setup_and_solve_problem(; greet = false)
     tf = ITime(tf, epoch = start_date)
     Δt = ITime(Δt, epoch = start_date)
     t0, tf, Δt = promote(t0, tf, Δt)
-    prob, cb = setup_prob(t0, tf, Δt, start_date; nelements)
+    prob, cb =
+        setup_prob(t0, tf, Δt, start_date, pc, a, Ksat_canopy, α; nelements)
 
     # Define timestepper and ODE algorithm
     stepper = CTS.ARS111()
@@ -435,58 +457,24 @@ function setup_and_solve_problem(; greet = false)
     return nothing
 end
 
-setup_and_solve_problem(; greet = true);
+setup_and_solve_problem(pc, a, Ksat_canopy, α; greet = true);
 # read in diagnostics and make some plots!
 #### ClimaAnalysis ####
 simdir = ClimaAnalysis.SimDir(outdir)
-short_names_bio = ["gpp", "ct", "lwp"]
-short_names_water = ["swc", "si", "sr", "swe"]
-short_names_other = ["swu", "lwu", "et"]
-group_names = ["bio", "water", "other"]
-months_id = [1, 4, 7, 10]
-for (group_id, group) in
-    enumerate([short_names_bio, short_names_water, short_names_other])
-    fig =
-        CairoMakie.Figure(size = (600 * length(months_id), 300 * length(group)))
-    for (var_id, short_name) in enumerate(group)
-        var = get(simdir; short_name)
-        times = ClimaAnalysis.times(var)
-        CairoMakie.Label(
-            fig[var_id, 0],
-            short_name,
-            tellheight = false,
-            tellwidth = false,
-            fontsize = 20,
-        )
-        for (t_id, t) in pairs(times[months_id])
-            layout = fig[var_id, t_id] = CairoMakie.GridLayout()
-            kwargs = ClimaAnalysis.has_altitude(var) ? Dict(:z => 1) : Dict()
-            ClimaAnalysis.Visualize.heatmap2D_on_globe!(
-                layout,
-                ClimaAnalysis.slice(var, time = t; kwargs...),
-                mask = ClimaAnalysis.Visualize.oceanmask(),
-                more_kwargs = Dict(
-                    :mask => ClimaAnalysis.Utils.kwargs(color = :white),
-                ),
-            )
-        end
-    end
-    months = Dates.monthname.(1:12) .|> x -> x[1:3]
-    for (idx, m_id) in enumerate(months_id)
-        CairoMakie.Label(
-            fig[0, idx],
-            months[m_id],
-            tellwidth = false,
-            fontsize = 20,
-        )
-    end
-    group_name = group_names[group_id]
-
-    CairoMakie.save(joinpath(root_path, "$(group_name).png"), fig)
-end
-
-short_names =
-    ["gpp", "swc", "et", "ct", "swe", "si", "lwp", "iwc", "trans", "msf"]
+short_names = [
+    "gpp",
+    "swc",
+    "et",
+    "shf",
+    "swu",
+    "lwu",
+    "swe",
+    "si",
+    "lwp",
+    "iwc",
+    "trans",
+    "msf",
+]
 
 include(
     joinpath(
