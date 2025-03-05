@@ -1,7 +1,7 @@
 name = "ClimaLand"
 uuid = "08f4d4ce-cf43-44bb-ad95-9d2d5f413532"
 authors = ["Clima Land Team"]
-version = "0.15.9"
+version = "0.15.10"
 
 [deps]
 ArtifactWrappers = "a14bc488-3040-4b00-9dc1-f6467924858a"
