@@ -15,9 +15,9 @@ export snow_surface_temperature,
 """
     snow_cover_fraction(x::FT; z0 = FT(1e-1), α = FT(2))::FT where {FT}
 
-Returns the snow cover fraction from snow depth `z`, from 
-Wu, Tongwen, and Guoxiong Wu. "An empirical formula to compute 
-snow cover fraction in GCMs." Advances in Atmospheric Sciences 
+Returns the snow cover fraction from snow depth `z`, from
+Wu, Tongwen, and Guoxiong Wu. "An empirical formula to compute
+snow cover fraction in GCMs." Advances in Atmospheric Sciences
 21 (2004): 529-535.
 """
 function snow_cover_fraction(z::FT; z0 = FT(1e-1), α = FT(2))::FT where {FT}
@@ -87,6 +87,13 @@ water.
 
 """
 function ClimaLand.surface_specific_humidity(model::SnowModel, Y, p, _...)
+    @. p.snow.q_sfc = snow_surface_specific_humidity(
+        p.snow.T_sfc,
+        p.snow.q_l,
+        p.drivers.thermal_state,
+        model.parameters,
+    )
+
     return p.snow.q_sfc
 end
 
@@ -314,8 +321,8 @@ end
 """
      phase_change_flux(U::FT, S::FT, q_l::FT, energy_flux::FT, parameters) where {FT}
 
-Computes the volume flux of liquid water undergoing phase change, given the 
-applied energy flux and current state of U,S,q_l. 
+Computes the volume flux of liquid water undergoing phase change, given the
+applied energy flux and current state of U,S,q_l.
 """
 function phase_change_flux(
     U::FT,

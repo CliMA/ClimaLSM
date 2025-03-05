@@ -50,7 +50,7 @@ for use within an `AbstractSnowModel` type. Currently we support a
 `MinimumDensityModel` model and the `NeuralDepthModel`.
 
 Since depth and bulk density are related via SWE, and SWE is a prognostic variable
-of the snow model, only depth or bulk density can be independently modeled at one time. 
+of the snow model, only depth or bulk density can be independently modeled at one time.
 This is why they are treated as a single "density model" even if the parameterization is actually
 a model for snow depth.
 The snow depth/density model can be diagnostic or introduce additional prognostic variables.
@@ -203,7 +203,7 @@ prognostic_vars(m::SnowModel) =
 
 """
     density_prog_vars(::AbstractDensityModel)
-    
+
 A default method for adding prognostic variables to the snow model as required
 by the density model choice.
 """
@@ -221,7 +221,7 @@ prognostic_types(m::SnowModel{FT}) where {FT} =
 
 """
     density_prog_vars(::AbstractDensityModel)
-    
+
 A default method for specifying variable types of the prognostic variables required
 by the density model choice, similar to `prognostic_types()`.
 """
@@ -240,7 +240,7 @@ prognostic_domain_names(m::SnowModel) =
 
 """
     density_prog_vars(::AbstractDensityModel)
-    
+
 A default method for specifying variable domain names of the prognostic variables required
 by the density model choice, similar to `prognostic_domain_names()`.
 """
@@ -253,7 +253,7 @@ Returns the auxiliary variable names for the snow model. These
 include the specific humidity at the surface of the snow `(`q_sfc`, unitless),
 the mass fraction in liquid water (`q_l`, unitless),
 the thermal conductivity (`κ`, W/m/K),
-the bulk temperature (`T`, K), the surface temperature (`T_sfc`, K), the snow depth (`z_snow`, m), 
+the bulk temperature (`T`, K), the surface temperature (`T_sfc`, K), the snow depth (`z_snow`, m),
 the bulk snow density (`ρ_snow`, kg/m^3)
 the SHF, LHF, and vapor flux (`turbulent_fluxes.shf`, etc),
 the net radiation (`R_n, J/m^2/s)`, the energy flux in liquid water runoff
@@ -354,12 +354,6 @@ function ClimaLand.make_update_aux(model::SnowModel{FT}) where {FT}
 
         @. p.snow.T_sfc = snow_surface_temperature(p.snow.T)
 
-        @. p.snow.q_sfc = snow_surface_specific_humidity(
-            p.snow.T_sfc,
-            p.snow.q_l,
-            p.drivers.thermal_state,
-            parameters,
-        )
         @. p.snow.water_runoff = compute_water_runoff(
             Y.snow.S,
             Y.snow.S_l,
@@ -467,9 +461,9 @@ end
 """
      clip_total_snow_energy_flux(U, S, total_energy_flux, total_water_flux, Δt)
 
-A helper function which clips the total energy flux such that 
-snow energy per unit ground area U will not become positive, and 
-which ensures that if the snow water equivalent S goes to zero in a step, 
+A helper function which clips the total energy flux such that
+snow energy per unit ground area U will not become positive, and
+which ensures that if the snow water equivalent S goes to zero in a step,
 U will too.
 """
 function clip_total_snow_energy_flux(
