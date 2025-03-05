@@ -1,0 +1,18 @@
+#!/bin/bash
+#PBS -N derecho_calibration
+#PBS -o output_bucket.txt
+#PBS -e error_bucket.txt
+#PBS -l walltime=10:00:00
+#PBS -l select=1:ncpus=64:ngpus=4
+
+## Account number for CliMA
+#PBS -A UCIT0011
+#PBS -q main
+
+module load climacommon
+# Run your command
+export CLIMACOMMS_DEVICE="CUDA"
+export CLIMACOMMS_CONTEXT="SINGLETON"
+julia --project=.buildkite -e 'using Pkg; Pkg.instantiate(;verbose=true)'
+
+julia --project=.buildkite/ experiments/calibration/global_bucket/calibrate_bucket.jl

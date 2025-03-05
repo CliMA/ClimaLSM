@@ -141,3 +141,9 @@ git-tree-sha1 = "4cc329093b0dbc3443db36e7c01133267ac94d37"
     [[bedrock_depth_60arcseconds.download]]
     sha256 = "6eb359e900141de837c41c0082257f7cf082e06e1371d45b07b1078f07e96c53"
     url = "https://caltech.box.com/shared/static/k1zq0w1psqu8dk0s9jotrfuu6hm8kxfp.gz"
+
+[era5_surface_fluxes]
+git-tree-sha1 = "f2cb69e41cba84991054162e794292f98bf0ae34"
+
+[era5_monthly_averages_surface_single_level_1979_2024]
+git-tree-sha1 = "6cddb07eeee2dd46dc5a19e9b2f706302ddba2c9"
