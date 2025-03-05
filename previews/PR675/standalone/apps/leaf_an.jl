@@ -38,10 +38,11 @@ function ParamViz.parameterisation(
     Γstar = co2_compensation(Γstar25, ΔHΓstar, T, To, R)
     medlynt = 1 + g1 / sqrt(VPD)
     ci = intercellular_co2(ca, Γstar, medlynt)
-    Aj = light_assimilation(Canopy.C3(), J, ci, Γstar)
+    is_c3 = 1.0
+    Aj = light_assimilation(is_c3, J, ci, Γstar)
     Kc = MM_Kc(Kc25, ΔHkc, T, To, R)
     Ko = MM_Ko(Ko25, ΔHko, T, To, R)
-    Ac = rubisco_assimilation(Canopy.C3(), Vcmax, ci, Γstar, Kc, Ko, oi)
+    Ac = rubisco_assimilation(is_c3, Vcmax, ci, Γstar, Kc, Ko, oi)
     Rd = dark_respiration(Vcmax25, β, f, ΔHRd, T, To, R)
     An = net_photosynthesis(Ac, Aj, Rd, β)
     return An
@@ -83,7 +84,7 @@ function An_app_f()
             "Ω", # Clumping index
             "Γstar25", # co2 compensation at 25c
             "ΔHΓstar", # a constant energy of activation
-            "To", # a standard temperature 
+            "To", # a standard temperature
             "R", # the universal gas constant
             "Vcmax25", # the maximum rate of carboxylation of Rubisco
             "ΔHJmax", # a constant

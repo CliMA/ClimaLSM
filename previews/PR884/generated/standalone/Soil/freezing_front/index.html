@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Phase Changes · ClimaLand.jl</title><meta name="title" content="Phase Changes · ClimaLand.jl"/><meta property="og:title" content="Phase Changes · ClimaLand.jl"/><meta property="twitter:title" content="Phase Changes · ClimaLand.jl"/><meta name="description" content="Documentation for ClimaLand.jl."/><meta property="og:description" content="Documentation for ClimaLand.jl."/><meta property="twitter:description" content="Documentation for ClimaLand.jl."/><script data-outdated-warner src="../../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../../assets/documenter.js"></script><script src="../../../../search_index.js"></script><script src="../../../../siteinfo.js"></script><script src="../../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../../"><img src="../../../../assets/logo.svg" alt="ClimaLand.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../../">ClimaLand.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../../">Home</a></li><li><a class="tocitem" href="../../../../getting_started/">Getting Started</a></li><li><input class="collapse-toggle" id="menuitem-3" type="checkbox" checked/><label class="tocitem" for="menuitem-3"><span class="docs-label">Tutorials</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><input class="collapse-toggle" id="menuitem-3-1" type="checkbox"/><label class="tocitem" for="menuitem-3-1"><span class="docs-label">Running land simulations</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><input class="collapse-toggle" id="menuitem-3-1-1" type="checkbox"/><label class="tocitem" for="menuitem-3-1-1"><span class="docs-label">Bucket LSM</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../Bucket/bucket_tutorial/">Introduction to the Land Bucket Model</a></li><li><a class="tocitem" href="../../Bucket/coupled_bucket/">Setting up a Coupled Simulation</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-3-1-2" type="checkbox"/><label class="tocitem" for="menuitem-3-1-2"><span class="docs-label">Integrated soil+canopy modeling</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../integrated/soil_canopy_tutorial/">Coupled Canopy and Soil</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-3-1-3" type="checkbox"/><label class="tocitem" for="menuitem-3-1-3"><span class="docs-label">Handling interactions between model components</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../integrated/handling_soil_fluxes/">Adjusting boundary conditions for the soil</a></li><li><a class="tocitem" href="../../../integrated/handling_snow_fluxes/">Adjusting boundary conditions for the snow</a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-3-2" type="checkbox" checked/><label class="tocitem" for="menuitem-3-2"><span class="docs-label">Running standalone component simulations</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><input class="collapse-toggle" id="menuitem-3-2-1" type="checkbox" checked/><label class="tocitem" for="menuitem-3-2-1"><span class="docs-label">Soil modeling</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../boundary_conditions/">Boundary conditions</a></li><li><a class="tocitem" href="../richards_equation/">Richards Equation</a></li><li><a class="tocitem" href="../soil_energy_hydrology/">Energy and Hydrology</a></li><li class="is-active"><a class="tocitem" href>Phase Changes</a><ul class="internal"><li class="toplevel"><a class="tocitem" href="#Import-necessary-modules"><span>Import necessary modules</span></a></li><li class="toplevel"><a class="tocitem" href="#Running-a-simulation"><span>Running a simulation</span></a></li><li class="toplevel"><a class="tocitem" href="#Comparison-to-data"><span>Comparison to data</span></a></li><li class="toplevel"><a class="tocitem" href="#Discussion-and-Model-Explanation"><span>Discussion and Model Explanation</span></a></li><li class="toplevel"><a class="tocitem" href="#References"><span>References</span></a></li></ul></li><li><a class="tocitem" href="../layered_soil/">Layered Soil</a></li><li><a class="tocitem" href="../evaporation/">Coarse Sand Evaporation</a></li><li><a class="tocitem" href="../evaporation_gilat_loess/">Gilat Loess Evaporation</a></li><li><a class="tocitem" href="../sublimation/">Bare soil site</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-3-2-2" type="checkbox"/><label class="tocitem" for="menuitem-3-2-2"><span class="docs-label">Canopy modeling</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../Canopy/canopy_tutorial/">Standalone Canopy</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-3-2-3" type="checkbox"/><label class="tocitem" for="menuitem-3-2-3"><span class="docs-label">Snow Modeling</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../Snow/base_tutorial/">Seasonal Snow Timeseries Generation with a Neural Network</a></li><li><a class="tocitem" href="../../Snow/data_tutorial/">Scraping SNOTEL Data</a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-3-3" type="checkbox"/><label class="tocitem" for="menuitem-3-3"><span class="docs-label">Calibrating your ClimaLand model</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../calibration/minimal_working_example/">Single site perfect model</a></li><li><a class="tocitem" href="../../../calibration/minimal_working_example_obs/">Single site observations</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-3-4" type="checkbox"/><label class="tocitem" for="menuitem-3-4"><span class="docs-label">For model developers</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../Usage/model_tutorial/">Intro to standalone models</a></li><li><a class="tocitem" href="../../Usage/LSM_single_column_tutorial/">Intro to multi-component models</a></li><li><a class="tocitem" href="../../Usage/domain_tutorial/">Intro to ClimaLand Domains</a></li><li><a class="tocitem" href="../../../shared_utilities/driver_tutorial/">Intro to forced site-level runs</a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-4" type="checkbox"/><label class="tocitem" for="menuitem-4"><span class="docs-label">Standalone models</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><input class="collapse-toggle" id="menuitem-4-1" type="checkbox"/><label class="tocitem" for="menuitem-4-1"><span class="docs-label">Vegetation</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><input class="collapse-toggle" id="menuitem-4-1-1" type="checkbox"/><label class="tocitem" for="menuitem-4-1-1"><span class="docs-label">Radiative transfer</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../../standalone/pages/vegetation/radiative_transfer/beer_model/">Beer model</a></li><li><a class="tocitem" href="../../../../standalone/pages/vegetation/radiative_transfer/twostream_model/">Two-Stream model</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-1-2" type="checkbox"/><label class="tocitem" for="menuitem-4-1-2"><span class="docs-label">Photosynthesis</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../../standalone/pages/vegetation/photosynthesis/farquhar_model/">Farquhar model</a></li><li><a class="tocitem" href="../../../../standalone/pages/vegetation/photosynthesis/optimality_model/">Optimality model</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-1-3" type="checkbox"/><label class="tocitem" for="menuitem-4-1-3"><span class="docs-label">Stomatal conductance</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../../standalone/pages/vegetation/stomatal_conductance/medlyn_model/">Medlyn model</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-1-4" type="checkbox"/><label class="tocitem" for="menuitem-4-1-4"><span class="docs-label">Plant hydraulics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../../standalone/pages/vegetation/plant_hydraulics/van_genuchten_model/">Van Genuchten model</a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-2" type="checkbox"/><label class="tocitem" for="menuitem-4-2"><span class="docs-label">Soil</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><input class="collapse-toggle" id="menuitem-4-2-1" type="checkbox"/><label class="tocitem" for="menuitem-4-2-1"><span class="docs-label">Biogeochemistry</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../../standalone/pages/soil/biogeochemistry/DAMM_model/">DAMM model</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-2-2" type="checkbox"/><label class="tocitem" for="menuitem-4-2-2"><span class="docs-label">Hydrology</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../../standalone/pages/soil/hydrology/richards_model/">Richards model</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-2-3" type="checkbox"/><label class="tocitem" for="menuitem-4-2-3"><span class="docs-label">Energy</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../../standalone/pages/soil/energy/energy_model/">Energy model</a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-3" type="checkbox"/><label class="tocitem" for="menuitem-4-3"><span class="docs-label">Snow</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../../standalone/pages/snow/snow_model/">Snow model</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-4" type="checkbox"/><label class="tocitem" for="menuitem-4-4"><span class="docs-label">SurfaceWater</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../../standalone/pages/surface_water/surface_water_model/">Surface water model</a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-5" type="checkbox"/><label class="tocitem" for="menuitem-5"><span class="docs-label">Diagnostics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../../diagnostics/users_diagnostics/">For users</a></li><li><a class="tocitem" href="../../../../diagnostics/developers_diagnostics/">For developers</a></li><li><a class="tocitem" href="../../../../diagnostics/available_diagnostics/">Available diagnostics</a></li></ul></li><li><a class="tocitem" href="../../../../Contributing/">Contribution guide</a></li><li><a class="tocitem" href="../../../../folderstructure/">Repository structure</a></li><li><input class="collapse-toggle" id="menuitem-8" type="checkbox"/><label class="tocitem" for="menuitem-8"><span class="docs-label">APIs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><input class="collapse-toggle" id="menuitem-8-1" type="checkbox"/><label class="tocitem" for="menuitem-8-1"><span class="docs-label">ClimaLand</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../../APIs/ClimaLand/">ClimaLand</a></li><li><a class="tocitem" href="../../../../APIs/Regridder/">Parameter Dataset Tools</a></li><li><a class="tocitem" href="../../../../APIs/shared_utilities/">Shared Utilities</a></li><li><input class="collapse-toggle" id="menuitem-8-1-4" type="checkbox"/><label class="tocitem" for="menuitem-8-1-4"><span class="docs-label">Soil</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../../APIs/Soil/">Soil Energy and Hydrology</a></li><li><a class="tocitem" href="../../../../APIs/SoilBiogeochemistry/">Soil Biogeochemistry</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-8-1-5" type="checkbox"/><label class="tocitem" for="menuitem-8-1-5"><span class="docs-label">Canopy</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../../APIs/canopy/Canopy/">Canopy Models</a></li><li><a class="tocitem" href="../../../../APIs/canopy/PlantHydraulics/">Plant Hydraulics</a></li><li><a class="tocitem" href="../../../../APIs/canopy/Photosynthesis/">Canopy Photosynthesis</a></li><li><a class="tocitem" href="../../../../APIs/canopy/RadiativeTransfer/">Canopy RT</a></li><li><a class="tocitem" href="../../../../APIs/canopy/CanopyEnergy/">Canopy Energy</a></li><li><a class="tocitem" href="../../../../APIs/canopy/StomatalConductance/">Canopy Stomatal Conductance</a></li><li><a class="tocitem" href="../../../../APIs/canopy/AutotrophicRespiration/">Canopy Autotrophic Respiration</a></li></ul></li><li><a class="tocitem" href="../../../../APIs/SurfaceWater/">Surface Water Models</a></li><li><a class="tocitem" href="../../../../APIs/Bucket/">Bucket Model</a></li><li><a class="tocitem" href="../../../../APIs/Snow/">Snow Model</a></li></ul></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li><a class="is-disabled">Running standalone component simulations</a></li><li><a class="is-disabled">Soil modeling</a></li><li class="is-active"><a href>Phase Changes</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Phase Changes</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/CliMA/ClimaLand.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/CliMA/ClimaLand.jl/../../../../.." title="View source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Modeling-a-freezing-front-in-unsaturated-soil"><a class="docs-heading-anchor" href="#Modeling-a-freezing-front-in-unsaturated-soil">Modeling a freezing front in unsaturated soil</a><a id="Modeling-a-freezing-front-in-unsaturated-soil-1"></a><a class="docs-heading-anchor-permalink" href="#Modeling-a-freezing-front-in-unsaturated-soil" title="Permalink"></a></h1><p>Before reading this tutorial, we recommend that you look over the coupled energy and water tutorial. That tutorial showed how to solve the heat equation for soil volumetric internal energy <code>ρe_int</code>, simultaneously with Richards equation for volumetric liquid water fraction <code>ϑ_l</code>, assuming zero volumetric ice fraction <code>θ_i</code> for all time, everywhere in the domain. In this example, we add in a source term to the right hand side for both <code>θ_i</code> and <code>ϑ_l</code> which models freezing and thawing and conserves water mass during the process. The equations are</p><p><span>$\frac{∂ ρe_{int}}{∂ t} =  ∇ ⋅ κ(θ_l, θ_i; ν, ...) ∇T + ∇ ⋅ ρe_{int_{liq}} K (T,θ_l, θ_i; ν, ...) \nabla h( ϑ_l, z; ν, ...)$</span></p><p><span>$\frac{ ∂ ϑ_l}{∂ t} = ∇ ⋅ K (T,θ_l, θ_i; ν, ...) ∇h( ϑ_l, z; ν, ...) -\frac{F_T}{ρ_l}$</span></p><p><span>$\frac{ ∂ θ_i}{∂ t} = \frac{F_T}{ρ_i}$</span></p><p>Here</p><p><span>$t$</span> is the time (s),</p><p><span>$z$</span> is the location in the vertical (m),</p><p><span>$ρe_{int}$</span> is the volumetric internal energy of the soil (J/m^3),</p><p><span>$T$</span> is the temperature of the soil (K),</p><p><span>$κ$</span> is the thermal conductivity (W/m/K),</p><p><span>$ρe_{int_{liq}}$</span> is the volumetric internal energy of liquid water (J/m^3),</p><p><span>$K$</span> is the hydraulic conductivity (m/s),</p><p><span>$h$</span> is the hydraulic head (m),</p><p><span>$ϑ_l$</span> is the augmented volumetric liquid water fraction,</p><p><span>$θ_i$</span> is the volumetric ice fraction,</p><p><span>$ν, ...$</span> denotes parameters relating to soil type, such as porosity, and</p><p><span>$F_T$</span> is the freeze-thaw term.</p><p>To begin, we will show how to implement adding in this source term. After the results are obtained, we will <a href="#Discussion-and-Model-Explanation">explain</a> how our model parameterizes this effect and compare the results with some analytic expections.</p><p>We solve these equations in an effectively 1-d domain with <span>$z ∈ [-0.2,0]$</span>, and with the following boundary and initial conditions:</p><p><span>$- κ ∇T(t, z = 0) = 28 W/m^2/K (T - 267.15K) ẑ$</span></p><p><span>$- κ ∇T(t, z= -0.2) =  -3 W/m^2/K (T - 279.85K) ẑ$</span></p><p><span>$T(t = 0, z) = 279.85 K$</span></p><p><span>$- K ∇h(t, z = 0) = 0 ẑ$</span></p><p><span>$-K ∇h(t, z = -0.2) = 0 ẑ$</span></p><p><span>$ϑ_l(t = 0, z) = 0.33$</span>.</p><p>The problem setup and soil properties are chosen to match the lab experiment of Mizoguchi (1990), as detailed in Hansson (2004) and Dall&#39;Amico (2011). Like Hansson et al., we allow for a small amount of energy leakage at the bottom of the domain to account for imperfect insulation.</p><h1 id="Import-necessary-modules"><a class="docs-heading-anchor" href="#Import-necessary-modules">Import necessary modules</a><a id="Import-necessary-modules-1"></a><a class="docs-heading-anchor-permalink" href="#Import-necessary-modules" title="Permalink"></a></h1><pre><code class="language-julia hljs">import SciMLBase
+import ClimaTimeSteppers as CTS
+using DelimitedFiles
+using CairoMakie
+
+using ClimaCore
+import ClimaParams as CP
+
+using ClimaLand
+using ClimaLand.Domains: Column
+using ClimaLand.Soil
+
+import ClimaLand
+import ClimaLand.Parameters as LP</code></pre><p>Preliminary set-up</p><p>Choose a floating point precision, and get the parameter set, which holds constants used across CliMA models:</p><pre><code class="language-julia hljs">FT = Float32</code></pre><pre><code class="nohighlight hljs">Float32</code></pre><p>Set the values of other parameters required by the model:</p><pre><code class="language-julia hljs">ν = FT(0.535)
+K_sat = FT(3.2e-6) # m/s
+S_s = FT(1e-3) #inverse meters
+vg_n = FT(1.48)
+vg_α = FT(1.11) # inverse meters
+hydrology_cm = vanGenuchten{FT}(; α = vg_α, n = vg_n);</code></pre><p>You could also try the Brooks and Corey model:</p><pre><code class="language-julia hljs">#ψb = FT(-0.6)
+#c = FT(0.43)
+#hcm = BrooksCorey(;ψb = ψb, c = c);
+θ_r = FT(0.05)
+ν_ss_om = FT(0.3)
+ν_ss_quartz = FT(0.7)
+ν_ss_gravel = FT(0.0)
+params = Soil.EnergyHydrologyParameters(
+    FT;
+    ν,
+    ν_ss_om,
+    ν_ss_quartz,
+    ν_ss_gravel,
+    hydrology_cm,
+    K_sat,
+    S_s,
+    θ_r,
+);</code></pre><p>Choose the domain and discretization:</p><pre><code class="language-julia hljs">zmax = FT(0)
+zmin = FT(-0.2)
+nelems = 20
+soil_domain = Column(; zlim = (zmin, zmax), nelements = nelems);</code></pre><p>Set the boundary conditions:</p><pre><code class="language-julia hljs">zero_water_flux_bc = WaterFluxBC((p, t) -&gt; 0.0)
+function top_heat_flux(p, t)
+    FT = eltype(p.soil.T)
+    p_len = ClimaCore.Spaces.nlevels(axes(p.soil.T))
+    T_c = ClimaCore.Fields.level(p.soil.T, p_len)
+    return @. FT(28 * (T_c - 267.15))
+end
+function bottom_heat_flux(p, t)
+    FT = eltype(p.soil.T)
+    T_c = ClimaCore.Fields.level(p.soil.T, 1)
+    return @. FT(-3 * (T_c - 279.85))
+end
+top_heat_flux_bc = HeatFluxBC(top_heat_flux)
+bottom_heat_flux_bc = HeatFluxBC(bottom_heat_flux)
+boundary_fluxes = (;
+    top = WaterHeatBC(; water = zero_water_flux_bc, heat = top_heat_flux_bc),
+    bottom = WaterHeatBC(;
+        water = zero_water_flux_bc,
+        heat = bottom_heat_flux_bc,
+    ),
+);</code></pre><p>Create the source term instance. Our phase change model requires knowledge of the vertical spacing, so we pass that information in via an attribute of the <code>PhaseChange</code> structure. Sources are added as elements of a list of sources. Here we just add freezing and thawing.</p><pre><code class="language-julia hljs">sources = (PhaseChange{FT}(),);</code></pre><p>Now we can package this up in the <code>EnergyHydrology</code> model struct:</p><pre><code class="language-julia hljs">soil = Soil.EnergyHydrology{FT}(;
+    parameters = params,
+    domain = soil_domain,
+    boundary_conditions = boundary_fluxes,
+    sources = sources,
+);</code></pre><h1 id="Running-a-simulation"><a class="docs-heading-anchor" href="#Running-a-simulation">Running a simulation</a><a id="Running-a-simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Running-a-simulation" title="Permalink"></a></h1><p>Once we have the model, we can <code>initialize</code> the state vectors and obtain the coordinates</p><pre><code class="language-julia hljs">Y, p, coords = initialize(soil);</code></pre><p>After which, we can specify the initial condition function, and initialze the variables:</p><pre><code class="language-julia hljs">function init_soil!(Ysoil, z, params)
+    ν = params.ν
+    FT = eltype(Ysoil.soil.ϑ_l)
+    Ysoil.soil.ϑ_l .= FT(0.33)
+    Ysoil.soil.θ_i .= FT(0.0)
+    T = FT(279.85)
+    ρc_s = Soil.volumetric_heat_capacity(
+        FT(0.33),
+        FT(0.0),
+        params.ρc_ds,
+        params.earth_param_set,
+    )
+    Ysoil.soil.ρe_int .=
+        Soil.volumetric_internal_energy.(
+            FT(0.0),
+            ρc_s,
+            T,
+            params.earth_param_set,
+        )
+end
+
+init_soil!(Y, coords.subsurface.z, soil.parameters);</code></pre><p>We choose the initial and final simulation times:</p><pre><code class="language-julia hljs">t0 = Float64(0)
+tf = Float64(60 * 60 * 50);</code></pre><p>We set the cache values corresponding to the initial conditions of the state Y:</p><pre><code class="language-julia hljs">set_initial_cache! = make_set_initial_cache(soil);
+set_initial_cache!(p, Y, t0);</code></pre><p>Create the tendency function, and choose a timestep, and timestepper:</p><pre><code class="language-julia hljs">exp_tendency! = make_exp_tendency(soil)
+imp_tendency! = make_imp_tendency(soil);
+jacobian! = ClimaLand.make_jacobian(soil);
+jac_kwargs = (; jac_prototype = ImplicitEquationJacobian(Y), Wfact = jacobian!);
+
+dt = Float64(100)
+
+timestepper = CTS.ARS111();
+ode_algo = CTS.IMEXAlgorithm(
+    timestepper,
+    CTS.NewtonsMethod(
+        max_iters = 3,
+        update_j = CTS.UpdateEvery(CTS.NewTimeStep),
+    ),
+);</code></pre><p>Problem definition and callbacks</p><pre><code class="language-julia hljs">prob = SciMLBase.ODEProblem(
+    CTS.ClimaODEFunction(
+        T_exp! = exp_tendency!,
+        T_imp! = SciMLBase.ODEFunction(imp_tendency!; jac_kwargs...),
+        dss! = ClimaLand.dss!,
+    ),
+    Y,
+    (t0, tf),
+    p,
+);</code></pre><p>Now we can solve the problem.</p><pre><code class="language-julia hljs">sol = SciMLBase.solve(prob, ode_algo; dt = dt, saveat = 0:3600:tf);</code></pre><h1 id="Comparison-to-data"><a class="docs-heading-anchor" href="#Comparison-to-data">Comparison to data</a><a id="Comparison-to-data-1"></a><a class="docs-heading-anchor-permalink" href="#Comparison-to-data" title="Permalink"></a></h1><p>This data was obtained by us from the figures of Hansson et al. (2004), but was originally obtained by Mizoguchi (1990). No error bars were reported, and we haven&#39;t quantified the error in our estimation of the data from images.</p><pre><code class="language-julia hljs">dataset_path = ClimaLand.Artifacts.mizoguchi1990_soil_freezing_data();
+ds = readdlm(dataset_path, &#39;,&#39;)
+hours = ds[:, 1][2:end]
+vwc = ds[:, 2][2:end] ./ 100.0
+depth = ds[:, 3][2:end]
+mask_12h = hours .== 12
+mask_24h = hours .== 24
+mask_50h = hours .== 50;
+
+fig = Figure(size = (900, 300))
+ax1 = Axis(
+    fig[1, 1],
+    title = &quot;12 hours&quot;,
+    xlabel = L&quot;θ_l + θ_i&quot;,
+    ylabel = &quot;Soil depth (m)&quot;,
+)
+limits!(ax1, 0.2, 0.5, -0.2, 0.0)
+ax2 = Axis(
+    fig[1, 2],
+    title = &quot;24 hours&quot;,
+    xlabel = L&quot;θ_l + θ_i&quot;,
+    yticksvisible = false,
+    yticklabelsvisible = false,
+)
+limits!(ax2, 0.2, 0.5, -0.2, 0.0)
+ax3 = Axis(
+    fig[1, 3],
+    title = &quot;50 hours&quot;,
+    xlabel = L&quot;θ_l + θ_i&quot;,
+    yticksvisible = false,
+    yticklabelsvisible = false,
+)
+limits!(ax3, 0.2, 0.5, -0.2, 0.0)
+
+
+z = parent(coords.subsurface.z)[:];
+
+scatter!(ax1, vwc[mask_12h], -depth[mask_12h], label = &quot;&quot;, color = &quot;purple&quot;)
+lines!(
+    ax1,
+    parent(sol.u[13].soil.ϑ_l .+ sol.u[13].soil.θ_i)[:],
+    z,
+    label = &quot;&quot;,
+    color = :green,
+)
+
+
+scatter!(ax2, vwc[mask_24h], -depth[mask_24h], label = &quot;&quot;, color = &quot;purple&quot;)
+lines!(
+    ax2,
+    parent(sol.u[25].soil.ϑ_l .+ sol.u[25].soil.θ_i)[:],
+    z,
+    label = &quot;&quot;,
+    color = :green,
+)
+
+scatter!(ax3, vwc[mask_50h], -depth[mask_50h], label = &quot;Data&quot;, color = &quot;purple&quot;)
+lines!(
+    ax3,
+    parent(sol.u[51].soil.ϑ_l .+ sol.u[51].soil.θ_i)[:],
+    z,
+    label = &quot;Simulation&quot;,
+    color = :green,
+)
+axislegend(ax3, position = :rb)
+
+save(&quot;mizoguchi_data_comparison.png&quot;, fig);</code></pre><p><img src="../mizoguchi_data_comparison.png" alt/></p><h1 id="Discussion-and-Model-Explanation"><a class="docs-heading-anchor" href="#Discussion-and-Model-Explanation">Discussion and Model Explanation</a><a id="Discussion-and-Model-Explanation-1"></a><a class="docs-heading-anchor-permalink" href="#Discussion-and-Model-Explanation" title="Permalink"></a></h1><p>To begin, let&#39;s observe that the freeze thaw source term alone conserves water mass, as it satisfies</p><p><span>$ρ_l \partial_tϑ_l + ρ_i \partial_tθ_i = -F_T + F_T = 0$</span></p><p>Next, we describe how we define <code>F_T</code>. The Clausius-Clapeyron (CC) equation defines a pressure-temperature curve along which two phases can co-exist. It assumes that the phases are at equal temperature and pressures. For water in soil, however, the liquid water experiences pressure <code>ρ_l g ψ</code>, where <code>ψ</code> is the matric potential. A more general form of the CC equation allows for different pressures in the two phases. Usually the ice pressure is taken to be zero, which is reasonable for unsaturated freezing soils. In saturated soils, freezing can lead to heaving of the soil which we do not model. After that assumption is made, we obtain that, below freezing (<span>$T &lt; T_f$</span>)</p><p><span>$\frac{dp_l}{ρ_l} = L_f \frac{dT}{T},$</span></p><p>or</p><p><span>$p_l = p_{l,0} + L_f ρ_l \frac{T-T_f}{T_f} \mathcal{H}(T_f-T)$</span></p><p>where we have assumed that assumed <code>T</code> is near the freezing point, and then performed a Taylor explansion of the logarithm, and we are ignoring the freezing point depression, which is small (less than one degree) for non-clay soils. What we have sketched is further explained in Dall&#39;Amico et al. (2011) and Kurylyk and Watanabe (2013).</p><p>What this implies is that above the freezing point, the pressure is equal to <span>$p_{l,0}$</span>, which is independent of temperature. Once the temperature drops below the freezing point, the pressure drops. Since prior to freezing, the pressure <span>$p_{l,0}$</span> is equal to <code>ρ_l g ψ(θ_l)</code>, water undergoing freezing alone (without flowing) should satisfy (Dall&#39;Amico et al. (2011)):</p><p><span>$p_{l,0} = ρ_l g ψ(θ_l+ρ_iθ_i/ρ_l)$</span></p><p>where <code>ψ</code> is the matric potential function of van Genuchten. At each step, we know both the water and ice contents, as well as the temperature, and can then solve for</p><p><span>$θ_{l}^* = (ν-θ_r) ψ^{-1}(p_l/(ρ_l g)) + θ_r.$</span></p><p>For freezing, the freeze thaw function <code>F_T</code> is equal to</p><p><span>$F_T = \frac{1}{τ} ρ_l (θ_l-θ_{l}^*) \mathcal{H}(T_f-T) \mathcal{H}(θ_l-θ_{l}^*)$</span></p><p>which brings the <code>θ_l</code> to a value which satisfies <code>p_l = ρ_l g ψ(θ_l)</code>. This is why, in our simulation, we see the liquid water fraction approaches a constant around 0.075 in the frozen region, rather than the residual fraction of 0.019, or 0. This behavior is observed, for example, in the experiments of Watanabe et al. (2011).</p><p>Although this approach may indicate that we should replace the pressure head appearing in the diffusive water flux term in Richards equation (Dall&#39;Amico et al. (2011)), we do not do so at present. As such, we may not be modeling the flow of water around the freezing front properly. However, we still observe cryosuction, which is the flow of water towards the freezing front, from the unfrozen side. As the water freezes, the liquid water content drops, setting up a larger gradient in matric potential across the freezing front, which generates upward flow against gravity. This is evident because the total water content at the top is larger at the end of the simulation than it was at <code>t=0</code> (when it was 0.33).</p><p>This model differs from others (e.g. Painter and Karra (2014), Hansson et al. (2004), Dall&#39;Amico et al. (2011))  in that it requires us to set a timescale for the phase change, <code>τ</code>. We currently use the thermal time</p><p><span>$τ_{LTE}= c̃ Δz²/κ,$</span></p><p>which seems to work adequately for modeling freezing front propagation and cryosuction, via comparisons with Mizoguchi (1990).</p><h1 id="References"><a class="docs-heading-anchor" href="#References">References</a><a id="References-1"></a><a class="docs-heading-anchor-permalink" href="#References" title="Permalink"></a></h1><ul><li>Mizoguchi, M., 1990. Water, heat and salt transport in freezing soil. Ph.D. thesis. (In Japanese.) University of Tokyo.</li><li>Hansson et al., Vadose Zone Journal 3:693–704 (2004).</li><li>M. Dall’Amico et al., The Cryosphere, 5, 469–484 (2011).</li><li>Kurylyk and Watanabe, Advances in Water Resources, Volume 60, (2013)</li><li>Watanabe et al. 2011, Annals of Glaciology , Volume 52 , Issue 58</li><li>Painter and Karra, Vadose Zone Journal (2014) 13 (4)</li></ul><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../soil_energy_hydrology/">« Energy and Hydrology</a><a class="docs-footer-nextpage" href="../layered_soil/">Layered Soil »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Wednesday 23 October 2024 18:32">Wednesday 23 October 2024</span>. Using Julia version 1.11.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

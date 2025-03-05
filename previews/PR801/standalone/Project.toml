@@ -1,0 +1,7 @@
+[deps]
+Bonito = "824d6782-a2ef-11e9-3a09-e5662e0c26f8"
+ClimaLand = "08f4d4ce-cf43-44bb-ad95-9d2d5f413532"
+ClimaLandSimulations = "348a0bd3-1299-4261-8002-d2cd97df6055"
+ClimaParams = "5c42b081-d73a-476f-9059-fd94b934656c"
+ParamViz = "9706fb73-1de9-418d-83da-fef8cd99bb4a"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
