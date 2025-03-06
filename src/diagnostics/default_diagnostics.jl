@@ -342,6 +342,8 @@ function default_diagnostics(
             "msf",
             "lwp",
             "iwc",
+            "swd",
+            "lwd",
         ]
     end
 
